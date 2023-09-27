@@ -114,7 +114,7 @@ For example:
 
 Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: Soundscape ecology. R package version 1.3.3. https://CRAN.R-project.org/package=soundecology
 
-The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. 
+The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. However, 'seewave' is not optimally designed for the analysis of large datasets and is therefore not described in detail here. 
 
 
 ### Data handling and manipulation
@@ -144,7 +144,26 @@ group_info <- group_info[order(group_info$StartRow), ]
 Data <- Data %>%
   mutate(Season = factor(findInterval(rownames(Data), group_info$StartRow), 
                         labels = group_info$Group))
-```		
+```
+
+#### Calculate hourly means from values of acoustic indices
+
+```
+SiteCode_Index <- read.table("Site_code_acoustic_index.txt", header = T, sep = "\t")
+attach(SiteCode_Index)
+
+Index_Means <- as.numeric()
+
+for (i in 1: put number of hours sample here) {
+  SiteCode_Index_Subset <- SiteCode_Index[SiteCode_Index$Hour==i,]
+  Index_Means[i] <- mean(SiteCode_Index_Subset$Index)
+}
+
+SiteCode_HourlyMeans <- data.frame("Hour"= c(1:put number of hours sample here), "Index value"= Index_Means)
+attach(SiteCode_HourlyMeans)
+
+write.csv(SiteCode_HourlyMeans, "SiteCode_HourlyMeans.csv")
+```
 
 
 ### Data visulisation 
@@ -174,6 +193,46 @@ ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+
 dev.off()
 ```
 ![Annual rose plot](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/68d2ceb1-f558-4ff3-bf7f-81a383b039d9)
+
+
+#### 2. Generalized additive models
+
+```
+OSPBioHourlyMeans2$Hour <- as.numeric(OSPBioHourlyMeans2$Hour)
+
+attach(OSPBio2)
+attach(model_p)
+
+class(Bio_Means)
+class(Hour)
+
+#OSP_Bio GAM
+
+gamOSPBio2 <- gam(Bio_Means ~ s(Hour, k=30), data = OSPBioHourlyMeans2, 
+            method = "REML")
+qq.gam(gamOSPBio2,rep=100, pch = 1, cex = 1)
+plot(gamOSPBio2, residuals = T, rug = F, pch = 1, cex = 1,
+     shade = T, shade.col = "lightblue", seWithMean = TRUE)
+gam.check(gamOSPBio2, old.style=F)
+
+summary(gamOSPBio2)
+
+hist(gamOSPBio2$residuals)
+
+model_p <- predict(gamOSPBio, type = "response")
+write.csv(model_p, "OSP_BioGAM.csv")
+
+OSPBioGAM <- read.table("OSP_BioGAM.txt", header = T, sep = "\t")
+
+ggplot() +
+  geom_line(data = OSPEntropyGAM, aes(x=Hour, y=Fit), 
+             color="blue") +
+  theme_classic() + 
+  scale_x_continuous(breaks = c(0,12,24,36,48,60,72,84,96,108,
+                                120,132,144,156,168))
+
+```
+
 
 
 ### Dealinig with spatial replication
