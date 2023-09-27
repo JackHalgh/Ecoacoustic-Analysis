@@ -4,8 +4,8 @@
 
 ### Contents 
 
-- [Part 1: Ecoacoustic Survey Design](#ecoacoustic-equipment-and-survey-design)
-- [Part 2: Calculating acoustic indices](#calculating-acoustic-indices)
+- [Part 1: Ecoacoustic equipment and survey design](#ecoacoustic-equipment-and-survey-design)
+- [Part 2: Acoustic indices](#acoustic-indices)
 - [Part 3: Data handling and manipulation](#data-handling-and-manipulation)
 - [Part 4: Data visulisation](#data-visulisation)
 - [Part 5: Dealing with spatial replication](#dealinig-with-spatial-replication)
@@ -23,32 +23,33 @@ Here is a list of the most widely used acoustic recorders for long-term soundsca
 | Song Meter Mini    | Terrestrial        | 576.00   | https://www.veldshop.nl/en/song-meter-mini.html                              |
 | Song Meter SM4 BAT | Terrestrial        | 999.00   | https://www.wildlifeacoustics.com/products/song-meter-sm4bat                 |
 
-![AuioMoth](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/1db23b45-a51b-4d84-b817-3d5a4f12fb7d)
-
-An AudioMoth strapped to a tree in Ordessa valley, Spain. 
-
 ### Types of acoustic survey design
 
 Deciding the best way to deploy your acoustic recorders in the environment that you plan to survey is very important and worthy of careful consideration. The optimal way to deploy your recorders will depend on several factors, including, how many recorders you have, how frequently they need to be serviced, and the research questions that you are interested in answering. 
 
-Something else to carefully consider is your recording schedule. Acoustic recorders can be pre-programmed to record continuously, or selectively (e.g., 1 min in every 10). There are pros and cons to each approach, but the benefits of selective recording schedules, such as longer intervals between servicing the recorders, are clear for long-term soundscape monitoring.   
-
 #### Line transect 
 Line transects involve collecting data along predetermined linear paths (transects) within the study area. This is especially useful for studying gradients or patterns over space.
 
-![Line transects](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/e238767a-40f3-42cb-9750-c01bfdb33b7b)
-
-In this case, line transects are used to survey along an elevation gradient in Ordessa Valley, Spain. 
+![survey design](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/2a7607ff-7031-4545-bad9-66df46b4a7d1)
 
 #### Random sampling 
 
-There are two types of random sampling. 
+Simple random sampling:
+Involves randomly selecting sample sites or individuals from the entire study area. It's useful for ensuring each unit has an equal chance of being sampled.
 
-1. Simple Random Sampling: Involves randomly selecting sample sites or individuals from the entire study area. It's useful for ensuring each unit has an equal chance of being sampled.
+Stratified random sampling: 
+Divides the study area into subgroups (strata) based on certain characteristics (e.g., habitat type) and then randomly samples within each stratum. This ensures representation of different ecosystem components.
 
-2. Stratified Sampling: Divides the study area into subgroups (strata) based on certain characteristics (e.g., habitat type) and then randomly samples within each stratum. This ensures representation of different ecosystem components.
+ #### Recording schedule and parameters   
 
-### Calculating acoustic Indices 
+Something else to carefully consider is your recording schedule and parameters. Acoustic recorders can be pre-programmed to record continuously, or selectively (e.g., 1 min in every 10). There are pros and cons to each approach, but the benefits of selective recording schedules, such as longer intervals between servicing the recorders, are clear for long-term soundscape monitoring. 
+
+![recording schedule](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/9df09336-14ef-427b-a98f-cdb8d88220c0)
+AudioMoth configuration app showing: (a) recording parameters, and b) recording schedule.
+
+You can also modify the sample rate (kHz), gain (dB), and other more detailed parameters such as trigger type and filtering. These settings will largely be dictated by your research question. For example, high sample rates (>192 kHz) and selective trigger types are ideal for bat surveys, whereas mid-range sample rates (~48 kHz) and no triggers are ideal for soundscape monitoring.        
+
+###  Acoustic indices 
 
 #### What are acoustic indcies?
 
@@ -112,6 +113,9 @@ For example:
 | fft_w     | FFT window to use.                                                                                      |
 
 Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: Soundscape ecology. R package version 1.3.3. https://CRAN.R-project.org/package=soundecology
+
+The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. 
+
 
 ### Data handling and manipulation
 
