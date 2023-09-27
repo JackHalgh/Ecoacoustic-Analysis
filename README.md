@@ -4,13 +4,30 @@
 
 ### Contents 
 
-- [Part 1: Ecoacoustic Survey Design](#ecoacoustic-survey-design)
+- [Part 1: Ecoacoustic Survey Design](#ecoacoustic-equipment-and-survey-design)
 - [Part 2: Calculating acoustic indices](#calculating-acoustic-indices)
 - [Part 3: Data handling and manipulation](#data-handling-and-manipulation)
 - [Part 4: Data visulisation](#data-visulisation)
 - [Part 5: Dealing with spatial replication](#dealinig-with-spatial-replication)
 
-### Ecoacoustic survey design
+### Ecoacoustic equipment and survey design
+
+#### Acoustic recorders
+
+Here is a list of the most widely used acoustic recorders for long-term soundscape monitoring in a variety of environments. 
+
+| Acoustic recorder | Realm(s)           | Cost ($) | Link                                                                         |
+|-------------------|--------------------|----------|------------------------------------------------------------------------------|
+| AudioMoth         | Terrestrial        | 89.99    | https://www.openacousticdevices.info/audiomoth                               |
+| HydroMoth         | Marine, Freshwater | 135.00   | https://groupgets.com/manufacturers/open-acoustic-devices/products/hydromoth |
+| Song Meter Mini   | Terrestrial        | 576.00   | https://www.veldshop.nl/en/song-meter-mini.html                              |
+
+![IMG-1223](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/63e1240d-2659-4dc5-bd51-a619a99f1dc0)
+AudioMoth
+
+#### Transect 
+
+#### Grid 
 
 ### Calculating acoustic Indices 
 
@@ -93,7 +110,7 @@ library(cluster)
 Data <- read.table("your_dataframe.txt", header = TRUE, sep = "\t")
 
 # Define your groups and row numbers
-group_info <- data.frame(Group = c("Spring", "Summer", "Autumn", "Winter"),
+group_info <- data.frame(Season = c("Spring", "Summer", "Autumn", "Winter"),
                          StartRow = c(1, 121819, 230832, 372640),
                          EndRow = c(121818, 230831, 372639, 465395))
 
@@ -102,16 +119,30 @@ group_info <- group_info[order(group_info$StartRow), ]
 
 # Use mutate to add the new column to the dataframe 
 Data <- Data %>%
-  mutate(Group = factor(findInterval(rownames(Data), group_info$StartRow), 
+  mutate(Season = factor(findInterval(rownames(Data), group_info$StartRow), 
                         labels = group_info$Group))
 ```		
 
 
 ### Data visulisation 
 
-#### Rose plots to visualise daily and seasonal variation 
+#### Visualising daily and seasonal variation 
+
+There are many ways to visualise soundscape variation over time in R Studio. Here, we are going to take a look at some of the most popular methods. 
+
+
+#### 1. Rose plots
 
 ```
+head(Data)
+  Season     Month      Value
+1 Winter Janurary  6.896953
+2 Winter Janurary  2.858804
+3 Winter Janurary  7.197239
+4 Winter Janurary  4.475334
+5 Winter Janurary  11.957710
+6 Winter Janurary  12.339196
+
 jpeg("Rose Plot.jpeg", width = 7, height = 7, units = 'in', res = 300)
 ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+ 
   geom_tile(colour="black",size=0.1)+ 
@@ -119,6 +150,8 @@ ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+
   coord_polar()+xlab("")+ylab("") + theme_minimal() 
 dev.off()
 ```
+![Annual rose plot](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/68d2ceb1-f558-4ff3-bf7f-81a383b039d9)
+
 
 ### Dealinig with spatial replication
 
