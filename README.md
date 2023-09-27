@@ -1,13 +1,15 @@
 # Pyrenean Institute of Ecology: Ecoacoustic Protocols  
 ### By Jack A. Greenhalgh, September 2023
-
+![Title image](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/d1275870-6d41-46f6-8c4b-a1dd37745752)
 ### Contents 
 
-1. Part 1: Survey design
-2. Part 2: Calculating acoustic indices
-3. Part 3: Data handling and manipulation
-4. Part 4: Data visulisation 
-5. Part 5: Dealing with spatial replication
+
+- [Part 1: Survey design](https://github.com/JackHalgh/Ecoacoustic-Analysis/edit/main/README.md#part-1-ecoacoustic-survey-design)
+* Part 1: Survey design
+* Part 2: Calculating acoustic indices
+* Part 3: Data handling and manipulation
+* Part 4: Data visulisation 
+* Part 5: Dealing with spatial replication
 
 ### Part 1: Ecoacoustic Survey Design
 
@@ -28,6 +30,9 @@ Many different types of acoustic indcies exist, however, here is a list of the m
 | Acoustic diversity index (ADI)                | “Calculated by dividing the spectrogram into bins (default 10) and taking the proportion of the signals in each bin above a threshold (default −50 dBFS). The ADI is the result of the Shannon index applied to these bins” (Villanueva-Rivera et al., 2018)                                                              | Birds and terrestrial biota (in forest, agricultural land and urban areas, Indiana, United States) | Villanueva-Rivera, Pijanowski, Doucette, and Pekin (2011) |
 | Bioacoustic index (BI)                        | Calculated as the “area under each curve included all frequency bands associated with the dB value that was greater than the minimum dB value for each curve. The area values are thus a function of both the sound level and the number of frequency bands used by the avifauna” (Boelman, Asner, Hart, & Martin, 2007)  | Birds and terrestrial biota (in forest, savanna, woodland and shrubland, Hawaii, United States)    | Boelman et al. (2007)                                     |
 | Normalized difference soundscape index (NDSI) | Seeks to “estimate the level of anthropogenic disturbance on the soundscape by computing the ratio of human-generated (anthrophony) to biological (biophony) acoustic components found in field collected sound samples” (Kasten, Gage, Fox, & Joo, 2012)                                                                 | Birds and terrestrial biota (on an island in Twin Lakes, MI, United States)                        | Kasten et al. (2012)                                      |
+
+Reference: Greenhalgh, J. A., Genner, M. J., Jones, G., & Desjonquères, C. (2020). The role of freshwater bioacoustics in ecological research. Wiley Interdisciplinary Reviews: Water, 7(3), e1416. https://doi.org/10.1002/wat2.1416  
+
 
 Multiple acoustic indices can be calculated in bulk using the'soundecology' package in R Studio (Villanueva-Rivera & Pijanowski, 2018)
 
