@@ -29,9 +29,9 @@ An AudioMoth strapped to a tree in Ordessa valley, Spain.
 
 ### Types of acoustic survey design
 
-Deciding the best way to deploy your acoustic recorders in the environemt that you plan to survey is very important and worthy of careful consideration. The optimal way to deploy your recorders will depend on several factors, including, how many recorders you have, how frequently the need to be serviced, and the research questions that you are interested in answering. 
+Deciding the best way to deploy your acoustic recorders in the environment that you plan to survey is very important and worthy of careful consideration. The optimal way to deploy your recorders will depend on several factors, including, how many recorders you have, how frequently they need to be serviced, and the research questions that you are interested in answering. 
 
-Something else to carefuly consider is your recording schedule. Acoustic recorders can be pre-programmed to record continuously, or selectively (e.g., 1 min in ever 10). There are pros and cons to each approach, but the benefits of selective recording schedules, such as longer intervals between servicing the recorders, are clear for long-term soundscape monitoring.   
+Something else to carefully consider is your recording schedule. Acoustic recorders can be pre-programmed to record continuously, or selectively (e.g., 1 min in every 10). There are pros and cons to each approach, but the benefits of selective recording schedules, such as longer intervals between servicing the recorders, are clear for long-term soundscape monitoring.   
 
 #### Line transect 
 Line transects involve collecting data along predetermined linear paths (transects) within the study area. This is especially useful for studying gradients or patterns over space.
