@@ -1,19 +1,19 @@
 # Pyrenean Institute of Ecology: Ecoacoustic Protocols  
-### By Jack A. Greenhalgh, September 2023
 ![Title image](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/d1275870-6d41-46f6-8c4b-a1dd37745752)
+### By [Jack A. Greenhalgh](https://www.jack-greenhalgh.com/), September 2023.     
+
 ### Contents 
 
 
-- [Part 1: Survey design](https://github.com/JackHalgh/Ecoacoustic-Analysis/edit/main/README.md#part-1-ecoacoustic-survey-design)
-* Part 1: Survey design
-* Part 2: Calculating acoustic indices
-* Part 3: Data handling and manipulation
-* Part 4: Data visulisation 
-* Part 5: Dealing with spatial replication
+- [Part 1: Ecoacoustic Survey Design](#ecoacoustic-survey-design)
+- [Part 2: Calculating acoustic indices](#calculating-acoustic-indices)
+- [Part 3: Data handling and manipulation](#data-handling-and-manipulation)
+- [Part 4: Data visulisation](#data-visulisation)
+- [Part 5: Dealing with spatial replication](#dealinig-with-spatial-replication)
 
-### Part 1: Ecoacoustic Survey Design
+### Ecoacoustic survey design
 
-### Part 2: Calculating Acoustic Indices 
+### Calculating Acoustic Indices 
 
 Acoustic indcies are mathametical functions that consider spectral and temporal information obtained from audio recordings. They can be used to  analyse large audio datasets and monitor biodiversity without the need to determine species identity. 
 
@@ -74,6 +74,12 @@ For example:
 | fft_w     | FFT window to use.                                                                                      |
 
 Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: Soundscape ecology. R package version 1.3.3. https://CRAN.R-project.org/package=soundecology
+
+### Data handling and manipulation
+
+### Data visulisation 
+
+### Dealinig with spatial replication
 
 ### References
 
