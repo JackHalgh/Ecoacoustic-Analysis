@@ -16,18 +16,33 @@
 
 Here is a list of the most widely used acoustic recorders for long-term soundscape monitoring in a variety of environments. 
 
-| Acoustic recorder | Realm(s)           | Cost ($) | Link                                                                         |
-|-------------------|--------------------|----------|------------------------------------------------------------------------------|
-| AudioMoth         | Terrestrial        | 89.99    | https://www.openacousticdevices.info/audiomoth                               |
-| HydroMoth         | Marine, Freshwater | 135.00   | https://groupgets.com/manufacturers/open-acoustic-devices/products/hydromoth |
-| Song Meter Mini   | Terrestrial        | 576.00   | https://www.veldshop.nl/en/song-meter-mini.html                              |
+| Acoustic recorder  | Realm(s)           | Cost ($) | Link                                                                         |
+|--------------------|--------------------|----------|------------------------------------------------------------------------------|
+| AudioMoth          | Terrestrial        | 89.99    | https://www.openacousticdevices.info/audiomoth                               |
+| HydroMoth          | Marine, Freshwater | 135.00   | https://groupgets.com/manufacturers/open-acoustic-devices/products/hydromoth |
+| Song Meter Mini    | Terrestrial        | 576.00   | https://www.veldshop.nl/en/song-meter-mini.html                              |
+| Song Meter SM4 BAT | Terrestrial        | 999.00   | https://www.wildlifeacoustics.com/products/song-meter-sm4bat                 |
 
-![IMG-1223](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/63e1240d-2659-4dc5-bd51-a619a99f1dc0)
-AudioMoth
+![AuioMoth](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/1db23b45-a51b-4d84-b817-3d5a4f12fb7d)
 
-#### Transect 
+An AudioMoth strapped to a tree in Ordessa valley, Spain. 
 
-#### Grid 
+### Types of acoustic survey design
+
+#### Line transect 
+Involves collecting data along predetermined linear paths (transects) within the study area. This is especially useful for studying gradients or patterns over space.
+
+![Line transects](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/e238767a-40f3-42cb-9750-c01bfdb33b7b)
+
+In this case, line transects are used to survey along an elevation gradient in Ordessa Valley, Spain. 
+
+#### Random sampling 
+
+There are two types of random sampling. 
+
+1. Simple Random Sampling: Involves randomly selecting sample sites or individuals from the entire study area. It's useful for ensuring each unit has an equal chance of being sampled.
+
+2. Stratified Sampling: Divides the study area into subgroups (strata) based on certain characteristics (e.g., habitat type) and then randomly samples within each stratum. This ensures representation of different ecosystem components.
 
 ### Calculating acoustic Indices 
 
