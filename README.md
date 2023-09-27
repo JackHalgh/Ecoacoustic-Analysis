@@ -4,7 +4,6 @@
 
 ### Contents 
 
-
 - [Part 1: Ecoacoustic Survey Design](#ecoacoustic-survey-design)
 - [Part 2: Calculating acoustic indices](#calculating-acoustic-indices)
 - [Part 3: Data handling and manipulation](#data-handling-and-manipulation)
@@ -13,7 +12,9 @@
 
 ### Ecoacoustic survey design
 
-### Calculating Acoustic Indices 
+### Calculating acoustic Indices 
+
+#### What are acoustic indcies?
 
 Acoustic indcies are mathametical functions that consider spectral and temporal information obtained from audio recordings. They can be used to  analyse large audio datasets and monitor biodiversity without the need to determine species identity. 
 
@@ -33,6 +34,7 @@ Many different types of acoustic indcies exist, however, here is a list of the m
 
 Reference: Greenhalgh, J. A., Genner, M. J., Jones, G., & Desjonquères, C. (2020). The role of freshwater bioacoustics in ecological research. Wiley Interdisciplinary Reviews: Water, 7(3), e1416. https://doi.org/10.1002/wat2.1416  
 
+#### Calculating acoustic indices in R Studio                                              
 
 Multiple acoustic indices can be calculated in bulk using the'soundecology' package in R Studio (Villanueva-Rivera & Pijanowski, 2018)
 
@@ -77,7 +79,46 @@ Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: S
 
 ### Data handling and manipulation
 
+#### Add a column for a catagorical variable to large datasets using dplyr
+
+In this case, we are going to add a new column to our dataset called 'Season'. Adding this variable to a dataset with >500,000 rows using Excel is challenging, but it's simple in R Studio. 
+
+```
+install.packages("dplyr")
+install.packages("cluster")
+library(dplyr)
+library(cluster)
+
+# Load data 
+Data <- read.table("your_dataframe.txt", header = TRUE, sep = "\t")
+
+# Define your groups and row numbers
+group_info <- data.frame(Group = c("Spring", "Summer", "Autumn", "Winter"),
+                         StartRow = c(1, 121819, 230832, 372640),
+                         EndRow = c(121818, 230831, 372639, 465395))
+
+# Ensure that group_info is sorted by StartRow
+group_info <- group_info[order(group_info$StartRow), ]
+
+# Use mutate to add the new column to the dataframe 
+Data <- Data %>%
+  mutate(Group = factor(findInterval(rownames(Data), group_info$StartRow), 
+                        labels = group_info$Group))
+```		
+
+
 ### Data visulisation 
+
+#### Rose plots to visualise daily and seasonal variation 
+
+```
+jpeg("Rose Plot.jpeg", width = 7, height = 7, units = 'in', res = 300)
+ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+ 
+  geom_tile(colour="black",size=0.1)+ 
+  scale_fill_gradientn(name="Bioacoustic index", colours=c("lightgreen","darkgreen"))+
+  coord_polar()+xlab("")+ylab("") + theme_minimal() 
+dev.off()
+```
 
 ### Dealinig with spatial replication
 
