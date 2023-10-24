@@ -198,38 +198,49 @@ dev.off()
 #### 2. Generalized additive models
 
 ```
-OSPBioHourlyMeans2$Hour <- as.numeric(OSPBioHourlyMeans2$Hour)
+#Load hourly means data
+HourlyMeans <- read.table("HourlyMeans.txt", sep = "\t", header=T)
+head(HourlyMeans)
+HourlyMeans$Hour <- as.numeric(HourlyMeans$Hour)
 
-attach(OSPBio2)
-attach(model_p)
+attach(HourlyMeans)
 
-class(Bio_Means)
+#Check variables are numeric 
+class(BioMean)
 class(Hour)
 
-#OSP_Bio GAM
+#Run GAM. You may have to change the k (knots) value to avoid over-fitting the model
+library(mgcv)
+library(nlme)
+gam_1 <- gam(BioMean ~ s(Hour, k=10), data = HourlyMeans, 
+                  method = "REML")
 
-gamOSPBio2 <- gam(Bio_Means ~ s(Hour, k=30), data = OSPBioHourlyMeans2, 
-            method = "REML")
-qq.gam(gamOSPBio2,rep=100, pch = 1, cex = 1)
-plot(gamOSPBio2, residuals = T, rug = F, pch = 1, cex = 1,
+#Plot GAM
+plot(gam_1, residuals = T, rug = F, pch = 1, cex = 1,
      shade = T, shade.col = "lightblue", seWithMean = TRUE)
-gam.check(gamOSPBio2, old.style=F)
 
-summary(gamOSPBio2)
+#Print results 
+summary(gam_1)
 
-hist(gamOSPBio2$residuals)
+#Check model
+gam.check(gam_1, old.style=F)
+qq.gam(gam_1,rep=100, pch = 1, cex = 1)
+hist(gam_1$residuals)
 
-model_p <- predict(gamOSPBio, type = "response")
-write.csv(model_p, "OSP_BioGAM.csv")
+#Export model predictions 
+model_p <- predict(gam_1, type = "response")
+write.csv(model_p, "gam_1.csv")
 
-OSPBioGAM <- read.table("OSP_BioGAM.txt", header = T, sep = "\t")
+#Import formatted model predictions
+gam_1_response <- read.table("gam_1.txt", header = T, sep = "\t")
 
+#Plot model predictions using ggplot2
+library(ggplot2)
 ggplot() +
-  geom_line(data = OSPEntropyGAM, aes(x=Hour, y=Fit), 
-             color="blue") +
-  theme_classic() + 
-  scale_x_continuous(breaks = c(0,12,24,36,48,60,72,84,96,108,
-                                120,132,144,156,168))
+  geom_line(data = gam_1_response, aes(x=Hour, y=Fit), 
+            color="darkblue") +
+  theme_classic() + ylab("Bioacoustic index") +
+  scale_x_continuous(breaks = c(0,2,4,6,8,10,12,14,16,18,20,22,24))
 
 ```
 
