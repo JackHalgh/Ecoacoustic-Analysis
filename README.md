@@ -172,30 +172,7 @@ write.csv(SiteCode_HourlyMeans, "SiteCode_HourlyMeans.csv")
 
 There are many ways to visualise soundscape variation over time in R Studio. Here, we are going to take a look at some of the most popular methods. 
 
-
-#### 1. Rose plots
-
-```
-head(Data)
-  Season     Month      Value
-1 Winter Janurary  6.896953
-2 Winter Janurary  2.858804
-3 Winter Janurary  7.197239
-4 Winter Janurary  4.475334
-5 Winter Janurary  11.957710
-6 Winter Janurary  12.339196
-
-jpeg("Rose Plot.jpeg", width = 7, height = 7, units = 'in', res = 300)
-ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+ 
-  geom_tile(colour="black",size=0.1)+ 
-  scale_fill_gradientn(name="Bioacoustic index", colours=c("lightgreen","darkgreen"))+
-  coord_polar()+xlab("")+ylab("") + theme_minimal() 
-dev.off()
-```
-![Annual rose plot](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/68d2ceb1-f558-4ff3-bf7f-81a383b039d9)
-
-
-#### 2. Generalized additive models
+#### 1. Generalized additive models
 
 Here, we will use a generalized additive model to predict daily acoustic variation of a pond soundscape from hourly means of the Bioacoustic Index. You can follow along with this example by using the HourlyMeans dataset in this repository. 
 
@@ -256,6 +233,30 @@ dev.off()
 ```
 ![Daily GAM](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/3e77e87a-0526-43ad-abb5-573ba6aa0338)
 
+#### 2. Rose plots
+
+Next, we'll look at the use of rose plots to visualise seasonal soundscape data. 
+
+```
+head(Data)
+  Season     Month      Value
+1 Winter Janurary  6.896953
+2 Winter Janurary  2.858804
+3 Winter Janurary  7.197239
+4 Winter Janurary  4.475334
+5 Winter Janurary  11.957710
+6 Winter Janurary  12.339196
+
+jpeg("Rose Plot.jpeg", width = 7, height = 7, units = 'in', res = 300)
+ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+ 
+  geom_tile(colour="black",size=0.1)+ 
+  scale_fill_gradientn(name="Bioacoustic index", colours=c("lightgreen","darkgreen"))+
+  coord_polar()+xlab("")+ylab("") + theme_minimal() 
+dev.off()
+```
+![Annual rose plot](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/68d2ceb1-f558-4ff3-bf7f-81a383b039d9)
+
+Of course, either method can be used to visualise daily, weekly, monthly, or seaosnal data. These are just examples and you should find the best method for your data. 
 
 
 ### Dealinig with spatial replication
