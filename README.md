@@ -197,15 +197,24 @@ dev.off()
 
 #### 2. Generalized additive models
 
+Here, we will use a generalized additive model to predict daily acoustic variation of a pond soundscape from hourly means of the Bioacoustic Index. You can follow along with this example by using the HourlyMeans dataset in this repository. 
+
 ```
 #Load hourly means data
 HourlyMeans <- read.table("HourlyMeans.txt", sep = "\t", header=T)
 head(HourlyMeans)
-HourlyMeans$Hour <- as.numeric(HourlyMeans$Hour)
+  Hour   BioMean
+1    0 33.169258
+2    1 28.401034
+3    2 23.632810
+4    3 18.864585
+5    4 14.096361
+6    5  9.328136
 
 attach(HourlyMeans)
 
-#Check variables are numeric 
+#Check variables are numeric
+HourlyMeans$Hour <- as.numeric(HourlyMeans$Hour)
 class(BioMean)
 class(Hour)
 
@@ -236,13 +245,16 @@ gam_1_response <- read.table("gam_1.txt", header = T, sep = "\t")
 
 #Plot model predictions using ggplot2
 library(ggplot2)
+jpeg("Daily GAM.jpeg", width = 7, height = 7, units = 'in', res = 300)
 ggplot() +
   geom_line(data = gam_1_response, aes(x=Hour, y=Fit), 
-            color="darkblue") +
-  theme_classic() + ylab("Bioacoustic index") +
+            color="darkblue") +  
+  theme_classic() + ylab("Bioacoustic index") + xlab("Hour of day")
   scale_x_continuous(breaks = c(0,2,4,6,8,10,12,14,16,18,20,22,24))
+dev.off()
 
 ```
+![Daily GAM](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/3e77e87a-0526-43ad-abb5-573ba6aa0338)
 
 
 
