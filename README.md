@@ -258,6 +258,48 @@ dev.off()
 
 Of course, either method can be used to visualise daily, weekly, monthly, or seaosnal data. These are just examples and you should find the best method for your data. 
 
+### Automated monitoring of bird populations using BirdNET 
+
+```
+# Set the directory where your BirdNET output CSV files are located
+setwd("DEFINE PATH")
+
+# List all the CSV files in the directory
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Initialize an empty dataframe to store the combined data
+combined_data <- data.frame()
+
+# Loop through each CSV file and read it into a temporary dataframe
+for (file in csv_files) {
+  birdNET_data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+  
+  # Combine the data from the temporary dataframe with the combined_data
+  combined_data <- rbind(combined_data, birdNET_data)
+}
+
+# Reset the working directory to its original value (optional)
+setwd("DEFINE PATH")
+
+# Write the combined data to a single CSV file
+write.csv(combined_data, file = "AudioMoth_Combined_Results.csv", row.names = FALSE)
+```
+
+library(lessR)
+
+####AudioMoth####
+
+combined_data <- read.table("AudioMoth_Combined_Results.txt", header = T, sep = "\t")
+
+#Subset data frame by species and calculate median and IQRs
+
+Barn_Owl <- combined_data[.(Common.name=="Barn Owl"), .(Scientific.name:Confidence)]
+Barn_Owl_IQR <- quantile(Barn_Owl$Confidence)
+
+Black_bellied_Plover <- combined_data[.(Common.name=="Black-bellied Plover"), .(Scientific.name:Confidence)]
+Black_bellied_Plover_IQR <- quantile(Black_bellied_Plover$Confidence)
+
+
 
 ### Dealinig with spatial replication
 
