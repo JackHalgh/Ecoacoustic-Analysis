@@ -260,7 +260,9 @@ Of course, either method can be used to visualise daily, weekly, monthly, or sea
 
 ### Automated monitoring of bird populations using BirdNET 
 
-BirdNET is a free online resource developed by the Cornell Lab of Ornithology that offers automated analysis of multiple sound files to identify brid calls. During the analysis, BirdNET produces a csv result file for every minuite of recorded audio. Therefore, it is necessary to combine the output files for further analysis of the data. 
+BirdNET is a free online resource developed by the Cornell Lab of Ornithology that offers automated analysis of multiple sound files to identify brid calla and can be downloaded here: https://birdnet.cornell.edu/ 
+
+During the analysis, BirdNET produces a csv result file for every minuite of recorded audio. Therefore, it is necessary to combine the output files for further analysis of the data. 
 
 The following code combines multiple csv output files into a single csv file. 
 
