@@ -260,6 +260,10 @@ Of course, either method can be used to visualise daily, weekly, monthly, or sea
 
 ### Automated monitoring of bird populations using BirdNET 
 
+BirdNET is a free online resource developed by the Cornell Lab of Ornithology that offers automated analysis of multiple sound files to identify brid calls. During the analysis, BirdNET produces a csv result file for every minuite of recorded audio. Therefore, it is necessary to combine the output files for further analysis of the data. 
+
+The following code combines multiple csv output files into a single csv file. 
+
 ```
 # Set the directory where your BirdNET output CSV files are located
 setwd("DEFINE PATH")
@@ -282,9 +286,12 @@ for (file in csv_files) {
 setwd("DEFINE PATH")
 
 # Write the combined data to a single CSV file
-write.csv(combined_data, file = "AudioMoth_Combined_Results.csv", row.names = FALSE)
+write.csv(combined_data, file = "Combined_Results.csv", row.names = FALSE)
 ```
 
+Next, we can subset the collated data to investigate all of the detections of a single species. 
+
+```
 library(lessR)
 
 ####AudioMoth####
@@ -299,6 +306,8 @@ Barn_Owl_IQR <- quantile(Barn_Owl$Confidence)
 Black_bellied_Plover <- combined_data[.(Common.name=="Black-bellied Plover"), .(Scientific.name:Confidence)]
 Black_bellied_Plover_IQR <- quantile(Black_bellied_Plover$Confidence)
 
+....
+```
 
 
 ### Dealinig with spatial replication
