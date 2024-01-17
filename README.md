@@ -148,6 +148,20 @@ Data <- Data %>%
 
 #### Calculate hourly means from values of acoustic indices
 
+1) Using base R:
+
+```
+Data$Hour <- as.factor(Data$Hour)
+
+mean_values <- aggregate(. ~ Hour, data = Data, mean)
+
+print(mean_values)
+
+write.csv(mean_values, "Hourly_means.csv")
+```
+
+2) Using for loops:
+
 ```
 SiteCode_Index <- read.table("Site_code_acoustic_index.txt", header = T, sep = "\t")
 attach(SiteCode_Index)
