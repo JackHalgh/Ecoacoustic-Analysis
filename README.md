@@ -119,6 +119,99 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 
 ### Data handling and manipulation
 
+#### Load acoustic indices ####
+
+# Read the CSV file into a data frame
+All_Data <- read.csv("acousticindex.csv")
+
+# Find unique values in the 'FOLDER' column
+unique_folders <- unique(All_Data$FOLDER)
+
+# Create a list to store data frames for each subset
+subset_data_frames <- list()
+
+# Loop through each unique folder name
+for (folder in unique_folders) {
+  # Subset the original data frame based on the current folder
+  subset_data <- All_Data[All_Data$FOLDER == folder, ]
+  
+  # Store the subset data frame in the list with folder name as key
+  subset_data_frames[[folder]] <- subset_data
+}
+
+# Function to filter data frames based on folder names containing specific patterns
+filter_data_frames <- function(list_of_data_frames, pattern) {
+  filtered_data_frames <- list()
+  for (folder_name in names(list_of_data_frames)) {
+    if (grepl(pattern, folder_name)) {
+      filtered_data_frames[[folder_name]] <- list_of_data_frames[[folder_name]]
+    }
+  }
+  return(filtered_data_frames)
+}
+
+# Group based on specific patterns
+grouped_data_frames <- list()
+patterns <- paste0("J", formatC(1:36, width = 3, format = "d", flag = "0"))
+
+for (pattern in patterns) {
+  grouped_data_frames[[pattern]] <- filter_data_frames(subset_data_frames, pattern)
+}
+
+#### Step 1. Clean the data ####
+
+# Identify missing dates
+
+J008_indices_unformatted <- read.table("J008_indices_unformatted.txt", header=T, sep = "\t")
+
+# Convert DATE column to Date format
+J008_indices_unformatted$DATE <- as.Date(J008_indices_unformatted$DATE, format = "%d/%m/%Y")
+
+# Sort the dates in ascending order
+J008_indices_unformatted <- J008_indices_unformatted[order(J008_indices_unformatted$DATE), , drop = FALSE]
+
+# Calculate the expected sequence of dates
+expected_dates <- seq(min(J008_indices_unformatted$DATE), max(J008_indices_unformatted$DATE), by = "day")
+
+head(expected_dates)
+
+# Identify missing dates
+missing_dates <- setdiff(expected_dates, J008_indices_unformatted$DATE)
+
+# Convert numeric dates to Date objects
+missing_dates_as_dates <- as.Date(missing_dates, origin = "1970-01-01")
+
+# Format dates as yyyy/mm/dd
+formatted_missing_dates <- format(missing_dates_as_dates, "%Y/%m/%d")
+
+# Output the formatted dates
+print(formatted_missing_dates)
+
+# Plot expected vs. missing dates
+
+library(ggplot2)
+
+# Convert expected dates to Date objects
+expected_dates <- as.Date(expected_dates)
+
+# Create a data frame for expected dates
+expected_dates_df <- data.frame(Date = expected_dates, Type = "Expected")
+
+# Create a data frame for missing dates
+missing_dates_df <- data.frame(Date = as.Date(formatted_missing_dates), Type = "Missing")
+
+# Combine the data frames
+combined_df <- rbind(expected_dates_df, missing_dates_df)
+
+# Plot the data
+ggplot(combined_df, aes(x = Date, fill = Type)) +
+  geom_histogram(binwidth = 1, position = "identity", alpha = 0.5) +
+  scale_fill_manual(values = c("Expected" = "blue", "Missing" = "red")) +
+  labs(x = "Date", y = "", title = "J008") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.text.y = element_blank()) +
+  scale_x_date(date_breaks = "10 day", date_labels = "%Y-%m-%d")
+
 #### Add a column for a catagorical variable to large datasets using dplyr
 
 In this case, we are going to add a new column to our dataset called 'Season'. Adding this variable to a dataset with >500,000 rows using Excel is challenging, but it's simple in R Studio. 
