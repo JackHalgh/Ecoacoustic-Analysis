@@ -123,9 +123,9 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 rm(list = ls())
 set.seed(123)
 setwd("C:/Users/Admin/Documents/R/Ordesa/Acoustic workflow")
-
+```
 #### Step 1. Load acoustic indices and subset sites ####
-
+```
 # Read the CSV file into a data frame
 All_Data <- read.csv("acousticindex.csv")
 
