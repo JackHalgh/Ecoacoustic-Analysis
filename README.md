@@ -119,10 +119,18 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 ```
 ### Data handling and manipulation
 
-#### Load acoustic indices ####
-```
+# Remove all objects in the global environment
+rm(list = ls())
+set.seed(123)
+setwd("C:/Users/Admin/Documents/R/Ordesa/Acoustic workflow")
+
+#### Step 1. Load acoustic indices and subset sites ####
+
 # Read the CSV file into a data frame
 All_Data <- read.csv("acousticindex.csv")
+
+# Remove AEI and ADI 
+All_Data <- subset(All_Data, select = -c(AEI, ADI, MODE))
 
 # Find unique values in the 'FOLDER' column
 unique_folders <- unique(All_Data$FOLDER)
@@ -158,31 +166,70 @@ for (pattern in patterns) {
   grouped_data_frames[[pattern]] <- filter_data_frames(subset_data_frames, pattern)
 }
 
-#### Step 1. Clean the data ####
+# Create a list to store single data frames for each pattern
+single_data_frames <- list()
+
+# Loop through each pattern
+for (pattern in names(grouped_data_frames)) {
+  # Get the list of data frames for the current pattern
+  data_frames_list <- grouped_data_frames[[pattern]]
+  
+  # Concatenate all data frames within the pattern
+  if (length(data_frames_list) > 0) {
+    combined_df <- do.call(rbind, data_frames_list)
+    
+    # Store the combined data frame in the new list
+    single_data_frames[[pattern]] <- combined_df
+  }
+}
+
+# Export all single data frames as .csv files
+for (pattern in names(single_data_frames)) {
+  # Define the file name for the current pattern
+  file_name <- paste0(pattern, "_data.csv")
+  
+  # Write the data frame to a .csv file
+  write.csv(single_data_frames[[pattern]], file = file_name, row.names = FALSE)
+}
+
+#### Step 2. Clean the data ####
+set.seed(123)
+rm(list = ls())
+setwd("C:/Users/Admin/Documents/R/Ordesa/Acoustic workflow")
 
 # Identify missing dates
 
-J008_indices_unformatted <- read.table("J008_indices_unformatted.txt", header=T, sep = "\t")
+J020_indices_unformatted <- read.table("J020_data.txt", header = T)
 
 # Convert DATE column to Date format
-J008_indices_unformatted$DATE <- as.Date(J008_indices_unformatted$DATE, format = "%d/%m/%Y")
+J020_indices_unformatted$DATE <- as.Date(J020_indices_unformatted$DATE, format = "%Y-%m-%d")
 
 # Sort the dates in ascending order
-J008_indices_unformatted <- J008_indices_unformatted[order(J008_indices_unformatted$DATE), , drop = FALSE]
+J020_indices_unformatted <- J020_indices_unformatted[order(J020_indices_unformatted$DATE), , drop = FALSE]
 
 # Calculate the expected sequence of dates
-expected_dates <- seq(min(J008_indices_unformatted$DATE), max(J008_indices_unformatted$DATE), by = "day")
+expected_dates <- seq(min(J020_indices_unformatted$DATE), max(J020_indices_unformatted$DATE), by = "day")
 
 head(expected_dates)
 
 # Identify missing dates
-missing_dates <- setdiff(expected_dates, J008_indices_unformatted$DATE)
+missing_dates <- setdiff(expected_dates, J020_indices_unformatted$DATE)
 
 # Convert numeric dates to Date objects
 missing_dates_as_dates <- as.Date(missing_dates, origin = "1970-01-01")
 
 # Format dates as yyyy/mm/dd
-formatted_missing_dates <- format(missing_dates_as_dates, "%Y/%m/%d")
+formatted_missing_dates <- format(missing_dates_as_dates, "%Y-%m-%d")
+
+if (length(formatted_missing_dates) == 0) {
+  print("***No missing dates in time series*** Continue to scaling.")
+  # Continue to scaling.
+} else {
+  print("***Missing dates in time series***")
+  # Create a data frame for missing dates
+  missing_dates_df <- data.frame(Date = as.Date(formatted_missing_dates), Type = "Missing")
+  # Plot missing dates
+}
 
 # Output the formatted dates
 print(formatted_missing_dates)
@@ -207,10 +254,200 @@ combined_df <- rbind(expected_dates_df, missing_dates_df)
 ggplot(combined_df, aes(x = Date, fill = Type)) +
   geom_histogram(binwidth = 1, position = "identity", alpha = 0.5) +
   scale_fill_manual(values = c("Expected" = "blue", "Missing" = "red")) +
-  labs(x = "Date", y = "", title = "J008") +
+  labs(x = "Date", y = "", title = "J020") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), axis.text.y = element_blank()) +
   scale_x_date(date_breaks = "10 day", date_labels = "%Y-%m-%d")
+
+# J020 - 12/07/2023 to 07/04/2023
+```
+#### Load data after subsampling ####
+```
+# Assuming your data frame is named 'data_frame_name'
+J020_indices_unformatted <- read.table("J020_data.txt", header = T)
+
+J020 <- J020_indices_unformatted[, -(1:8)]
+
+# scaling the acoustic indices
+
+normalise <- function (x, xmin, xmax) {
+  y <- (x - xmin)/(xmax - xmin)
+}
+
+# Create a normalized dataset between 1.5 and 98.5% bounds 
+q1.values <- NULL
+q2.values <- NULL
+for (i in 1:ncol(J020)) {
+  q1 <- unname(quantile(J020[,i], probs = 0.015, na.rm = TRUE))
+  q2 <- unname(quantile(J020[,i], probs = 0.985, na.rm = TRUE))
+  q1.values <- c(q1.values, q1)
+  q2.values <- c(q2.values, q2)
+  J020[,i]  <- normalise(J020[,i], q1, q2)
+}
+rm(q1, q2, i)
+
+# adjust values greater than 1 or less than 0 to 1 and 0 respectively
+for (j in 1:ncol(J020)) {
+  a <- which(J020[,j] > 1)
+  J020[a,j] = 1
+  a <- which(J020[,j] < 0)
+  J020[a,j] = 0
+}
+
+J020_Scaled <- J020
+
+# Identify and remove highly correlated variables
+
+#review correlation matrix and remove highly correlated variables 
+
+library(corrplot)
+head(J020_Scaled)
+
+# Calculate correlation matrix
+correlation_matrix <- cor(J020_Scaled)
+
+print(correlation_matrix)
+
+# Plot correlation matrix
+corrplot(correlation_matrix, method = "square")
+
+# Remove highly correlated variables
+library(caret)
+
+# Set a threshold 
+threshold <- 0.8 
+
+# Find highly correlated variables
+highly_correlated <- findCorrelation(correlation_matrix, cutoff = threshold)
+
+# Get names of highly correlated variables
+highly_correlated_names <- colnames(correlation_matrix)[highly_correlated]
+
+# Print the names of highly correlated variables
+print(highly_correlated_names)
+
+# Find indices of highly correlated variables in the dataframe
+highly_correlated_indices <- match(highly_correlated_names, colnames(J020_Scaled))
+
+# Remove highly correlated variables from the entire dataframe
+J020_Cleaned <- J020_Scaled[, -highly_correlated_indices]
+
+# Print the cleaned dataframe
+head(J020_Cleaned)
+```
+#### Step 3. Perform Principal Component Analysis ####
+```
+indices_pca <- prcomp(J020_Cleaned, scale. = F)
+indices_pca$PC1 <- indices_pca$x[,1]
+indices_pca$PC2 <- indices_pca$x[,2]
+indices_pca$PC3 <- indices_pca$x[,3]
+indices_pca$PC4 <- indices_pca$x[,4]
+indices_pca$PC5 <- indices_pca$x[,5]
+indices_pca$PC6 <- indices_pca$x[,6]
+indices_pca$PC7 <- indices_pca$x[,7]
+
+pca_coef <- cbind(indices_pca$PC1, indices_pca$PC2,
+                  indices_pca$PC3, indices_pca$PC4,
+                  indices_pca$PC5, indices_pca$PC6,
+                  indices_pca$PC7)
+rm(indices_pca)
+
+coef_min_max <- pca_coef[,1:3]
+
+# Scale the PCA coefficients between 0 and 1 so they can be 
+# mapped to red, green and blue channels.
+coef_min_max_norm <- coef_min_max
+min.values <- NULL
+max.values <- NULL
+for (i in 1:3) {
+  min <- unname(quantile(pca_coef[,i], probs = 0.0, na.rm = TRUE))
+  max <- unname(quantile(pca_coef[,i], probs = 1.0, na.rm = TRUE))
+  min.values <- c(min.values, min)
+  max.values <- c(max.values, max)
+  coef_min_max_norm[,i]  <- normalise(coef_min_max[,i], min, max)
+}
+
+summary(coef_min_max_norm)
+
+write.csv(coef_min_max_norm, "coef_min_max_norm.csv")
+```
+#### Step 4. Assign RGB values to principal components ####
+```
+library(ggplot2)
+library(reshape2)
+
+# assign RGB values
+rgb_data <- coef_min_max_norm
+
+# find start and end times
+
+min(J020_indices_unformatted$IN.FILE)
+max(J020_indices_unformatted$IN.FILE)
+
+# Generate time sequence for one year with 10-minute intervals
+start_time <- as.POSIXct("2023-03-16 13:10:00", tz = "UTC")
+end_time <- as.POSIXct("2023-07-24 13:10:00", tz = "UTC")
+time_sequence <- seq(start_time, end_time, by = "10 min")
+time_sequence
+
+# Convert matrix to data frame and add time column
+rgb_df <- as.data.frame(rgb_data)
+rgb_df$time <- time_sequence
+
+# Combine RGB values into a single color
+combined_colors <- rgb(rgb_df$V1, rgb_df$V2, rgb_df$V3)
+colour_codes <- as.data.frame(combined_colors)
+combined_df <- cbind(rgb_df$time, colour_codes)
+
+write.csv(combined_df, "colour codes.csv")
+
+head(combined_df)
+
+# Filter data for the desired time range
+start_date <- as.POSIXct("2023-03-16 13:10:00", tz = "UTC")
+end_date <- as.POSIXct("2023-07-24 13:10:00", tz = "UTC")
+
+rgb_df_filtered <- rgb_df[rgb_df$time >= start_date & rgb_df$time <= end_date, ]
+
+# Reshape data for ggplot2
+rgb_df_filtered <- melt(rgb_df_filtered, id.vars = "time")
+colnames(rgb_df_filtered) <- c("Time", "Component", "Value")
+
+# Define custom labels
+custom_labels <- c("Principal component 1", "Principal component 2", "Principal component 3")
+
+# Plot with custom labels and alpha
+plot <- ggplot(rgb_df_filtered, aes(x = Time, y = Value, color = Component)) +
+  geom_line(alpha=0.2)+
+  geom_smooth(method = "gam", se = FALSE, alpha = 1) +  # Add trend lines with alpha = 1
+  scale_color_manual(values = c("darkred", "darkgreen", "darkblue"), labels = custom_labels) +
+  labs(x = "Date", y = "Scaled principal components", title = "J020 - 2023") +
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=1),
+                            panel.background = element_blank(),
+                            panel.grid.major = element_blank(), 
+                            panel.grid.minor = element_blank())
+
+ggsave("J020 - 2023.jpeg", plot, dpi = 300)
+
+#### Step 5. Plot PCA diel plots ####
+
+colour_codes <- read.csv("colour codes full.csv")
+head(colour_codes)
+attach(colour_codes)
+
+# Convert date and time to proper data types
+colour_codes$date <- as.Date(colour_codes$date, format = "%d/%m/%Y")
+colour_codes$time <- as.POSIXct(colour_codes$time, format = "%H:%M")
+
+# Plot using ggplot2
+ggplot(colour_codes, aes(x = time, y = date)) +
+  geom_tile(fill=colour.code) +
+  labs(x = "Time of day", y = "Date") +
+  scale_x_datetime(date_breaks = "2 hours", date_labels = "%I %p") + 
+  theme_bw() +   
+  geom_vline(xintercept = as.numeric(sunrise_time), linetype = "dashed", color = "black") +
+  geom_vline(xintercept = as.numeric(sunset_time), linetype = "dashed", color = "black")
+```
 
 #### Add a column for a catagorical variable to large datasets using dplyr
 
