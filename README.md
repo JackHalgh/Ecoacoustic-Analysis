@@ -428,9 +428,9 @@ plot <- ggplot(rgb_df_filtered, aes(x = Time, y = Value, color = Component)) +
                             panel.grid.minor = element_blank())
 
 ggsave("J020 - 2023.jpeg", plot, dpi = 300)
-
+```
 #### Step 5. Plot PCA diel plots ####
-
+```
 colour_codes <- read.csv("colour codes full.csv")
 head(colour_codes)
 attach(colour_codes)
