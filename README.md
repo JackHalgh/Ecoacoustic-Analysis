@@ -117,8 +117,9 @@ Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: S
 The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. However, 'seewave' is not optimally designed for the analysis of large datasets and is therefore not described in detail here. 
 
 ```
-### Data handling and manipulation
-
+### Acoustic workflow 
+```
+```
 # Remove all objects in the global environment
 rm(list = ls())
 set.seed(123)
@@ -191,8 +192,9 @@ for (pattern in names(single_data_frames)) {
   # Write the data frame to a .csv file
   write.csv(single_data_frames[[pattern]], file = file_name, row.names = FALSE)
 }
-
+```
 #### Step 2. Clean the data ####
+```
 set.seed(123)
 rm(list = ls())
 setwd("C:/Users/Admin/Documents/R/Ordesa/Acoustic workflow")
