@@ -450,6 +450,63 @@ ggplot(colour_codes, aes(x = time, y = date)) +
   geom_vline(xintercept = as.numeric(sunrise_time), linetype = "dashed", color = "black") +
   geom_vline(xintercept = as.numeric(sunset_time), linetype = "dashed", color = "black")
 ```
+# Load data
+J003_combined_dates_times_RGB <- read.csv("J003_combined_dates_times_RGB.csv")
+
+head(J003_combined_dates_times_RGB)
+
+# Convert IN.FILE to datetime format
+J003_combined_dates_times_RGB$datetime <- as.POSIXct(strptime(substr(J003_combined_dates_times_RGB$IN.FILE, 1, 14), format = "%Y%m%d_%H%M%S"), tz = "UTC")
+
+# Sort the dataframe by datetime
+J003_combined_dates_times_RGB <- J003_combined_dates_times_RGB[order(J003_combined_dates_times_RGB$datetime),]
+
+# Calculate time differences between consecutive rows
+time_diff <- c(0, diff(J003_combined_dates_times_RGB$datetime))
+
+# Identify where there are gaps greater than 10 minutes
+gap_indices <- which(time_diff > (10 * 60))
+
+# Create a new dataframe to store the gaps
+gaps_df <- data.frame(IN.FILE = character(),
+                      V1 = numeric(),
+                      V2 = numeric(),
+                      V3 = numeric(),
+                      datetime = as.POSIXct(character(), tz = "UTC"),  # Add datetime column to match the original dataframe
+                      stringsAsFactors = FALSE)
+
+# Iterate over the dataframe and fill gaps
+for (i in 1:(length(J003_combined_dates_times_RGB$datetime) - 1)) {
+  current_time <- J003_combined_dates_times_RGB$datetime[i]
+  next_time <- J003_combined_dates_times_RGB$datetime[i + 1]
+  time_diff <- as.numeric(difftime(next_time, current_time, units = "mins"))
+  
+  if (time_diff > 10) {
+    num_intervals <- ceiling(time_diff / 10)
+    for (j in 1:(num_intervals - 1)) {
+      new_row <- data.frame(IN.FILE = paste("Gap_", i, "_", j, sep = ""),
+                            V1 = 0,
+                            V2 = 0,
+                            V3 = 0,
+                            datetime = current_time + (j * (10 * 60)))  # Increment datetime by 10 minutes
+      gaps_df <- rbind(gaps_df, new_row)
+    }
+  }
+}
+
+# Merge gaps_df with the original dataframe
+J003_combined_dates_times_RGB <- rbind(J003_combined_dates_times_RGB, gaps_df)
+
+# Sort the dataframe by datetime
+J003_imputed_zeros_RGB <- J003_combined_dates_times_RGB[order(J003_combined_dates_times_RGB$datetime),]
+
+# Print the updated dataframe
+print(J003_imputed_zeros_RGB)
+
+write.csv(J003_imputed_zeros_RGB, "J003_imputed_zeros_RGB.csv")
+
+```
+
 
 #### Add a column for a catagorical variable to large datasets using dplyr
 
