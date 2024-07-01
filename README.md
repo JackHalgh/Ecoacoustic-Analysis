@@ -116,14 +116,24 @@ Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: S
 
 The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. However, 'seewave' is not optimally designed for the analysis of large datasets and is therefore not described in detail here. 
 
+### Tapestry plots: Visualising long-term passive acoustic monitoring data 
 
-#### Tapestry plots: Step 1. 
+The visualisation of long-term passive acoustic monitoring data consisting of multiple acoustic indices can be challenging. In this section, I will explain the process of creating tapestry plots for the automated and intuitive  visualisation of long-term passive acoustic monitoring data.
+
+![Tapestry plot workflow](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/be6e5223-0dd8-4993-9063-30a2f53c765c)
+(Above) Tapestry plot workflow summary. 
+
+![J016 tapestry plot GRB (213)](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/ba3385bf-6de4-43fa-a258-68beed61a965)
+(Above) Habitats characterised by dense tree cover at lower elevations, such as beech dominated deciduous woodland (1,250 m) and Scots pine forests on the valley slopes (1,250 m – 1,800 m), showed evidence of a significant amount of bird song represented as dark green, with clear demarcations for the dawn and dusk choruses. Bush cricket stridulation was also detected in the evenings (20:00 – 00:00) between July and September represented by orange.  
+
+
+#### Tapestry plots: Step 1: Subsetting, cleaning, and running a global PCA. 
 
 ```
-# Remove all objects in the global environment
+# Set seed, locale, and working directory
 set.seed(123)
 rm(list = ls())
-setwd("C:/Users/Administrador/Downloads/R/Ordesa/Data")
+setwd("you_directory_here")
 
 library(readxl)
 
@@ -322,13 +332,12 @@ for (pattern in names(single_data_frames)) {
 }
 ```
 
-#### Tapestry plots: Step 2. 
+#### Tapestry plots: Step 2: Automatically accounting for missing data and plotting.  
 ```
 # Set seed, locale, and working directory
 set.seed(123)
 rm(list = ls())
-Sys.setlocale("LC_TIME", "English")
-setwd("C:/Users/Administrador/Downloads/R/Ordesa/Data")
+setwd("you_directory_here")
 
 # Load necessary libraries
 library(tidyverse)
@@ -469,188 +478,6 @@ for (file in files) {
   ggsave(plot_name, plot = p, width = 8, height = 8, dpi = 300)
 }
 ```
-
-#### Calculate hourly means from values of acoustic indices
-
-1) Using base R:
-
-```
-Data$Hour <- as.factor(Data$Hour)
-
-mean_values <- aggregate(. ~ Hour, data = Data, mean)
-
-print(mean_values)
-
-write.csv(mean_values, "Hourly_means.csv")
-```
-
-2) Using for loops:
-
-```
-SiteCode_Index <- read.table("Site_code_acoustic_index.txt", header = T, sep = "\t")
-attach(SiteCode_Index)
-
-Index_Means <- as.numeric()
-
-for (i in 1: put number of hours sample here) {
-  SiteCode_Index_Subset <- SiteCode_Index[SiteCode_Index$Hour==i,]
-  Index_Means[i] <- mean(SiteCode_Index_Subset$Index)
-}
-
-SiteCode_HourlyMeans <- data.frame("Hour"= c(1:put number of hours sample here), "Index value"= Index_Means)
-attach(SiteCode_HourlyMeans)
-
-write.csv(SiteCode_HourlyMeans, "SiteCode_HourlyMeans.csv")
-```
-
-
-### Data visulisation 
-
-#### Visualising daily and seasonal variation 
-
-There are many ways to visualise soundscape variation over time in R Studio. Here, we are going to take a look at some of the most popular methods. 
-
-#### 1. Generalized additive models
-
-Here, we will use a generalized additive model to predict daily acoustic variation of a pond soundscape from hourly means of the Bioacoustic Index. You can follow along with this example by using the HourlyMeans dataset in this repository. 
-
-```
-#Load hourly means data
-HourlyMeans <- read.table("HourlyMeans.txt", sep = "\t", header=T)
-head(HourlyMeans)
-  Hour   BioMean
-1    0 33.169258
-2    1 28.401034
-3    2 23.632810
-4    3 18.864585
-5    4 14.096361
-6    5  9.328136
-
-attach(HourlyMeans)
-
-#Check variables are numeric
-HourlyMeans$Hour <- as.numeric(HourlyMeans$Hour)
-class(BioMean)
-class(Hour)
-
-#Run GAM. You may have to change the k (knots) value to avoid over-fitting the model
-library(mgcv)
-library(nlme)
-gam_1 <- gam(BioMean ~ s(Hour, k=10), data = HourlyMeans, 
-                  method = "REML")
-
-#Plot GAM
-plot(gam_1, residuals = T, rug = F, pch = 1, cex = 1,
-     shade = T, shade.col = "lightblue", seWithMean = TRUE)
-
-#Print results 
-summary(gam_1)
-
-#Check model
-gam.check(gam_1, old.style=F)
-qq.gam(gam_1,rep=100, pch = 1, cex = 1)
-hist(gam_1$residuals)
-
-#Export model predictions 
-model_p <- predict(gam_1, type = "response")
-write.csv(model_p, "gam_1.csv")
-
-#Import formatted model predictions
-gam_1_response <- read.table("gam_1.txt", header = T, sep = "\t")
-
-#Plot model predictions using ggplot2
-library(ggplot2)
-jpeg("Daily GAM.jpeg", width = 7, height = 7, units = 'in', res = 300)
-ggplot() +
-  geom_line(data = gam_1_response, aes(x=Hour, y=Fit), 
-            color="darkblue") +  
-  theme_classic() + ylab("Bioacoustic index") + xlab("Hour of day")
-  scale_x_continuous(breaks = c(0,2,4,6,8,10,12,14,16,18,20,22,24))
-dev.off()
-
-```
-![Daily GAM](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/3e77e87a-0526-43ad-abb5-573ba6aa0338)
-
-#### 2. Rose plots
-
-Next, we'll look at the use of rose plots to visualise seasonal soundscape data. 
-
-```
-head(Data)
-  Season     Month      Value
-1 Winter Janurary  6.896953
-2 Winter Janurary  2.858804
-3 Winter Janurary  7.197239
-4 Winter Janurary  4.475334
-5 Winter Janurary  11.957710
-6 Winter Janurary  12.339196
-
-jpeg("Rose Plot.jpeg", width = 7, height = 7, units = 'in', res = 300)
-ggplot(data=Data,aes(x=Month,y=Season,fill=Value))+ 
-  geom_tile(colour="black",size=0.1)+ 
-  scale_fill_gradientn(name="Bioacoustic index", colours=c("lightgreen","darkgreen"))+
-  coord_polar()+xlab("")+ylab("") + theme_minimal() 
-dev.off()
-```
-![Annual rose plot](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/68d2ceb1-f558-4ff3-bf7f-81a383b039d9)
-
-Of course, either method can be used to visualise daily, weekly, monthly, or seaosnal data. These are just examples and you should find the best method for your data. 
-
-### Automated monitoring of bird populations using BirdNET 
-
-BirdNET is a free online resource developed by the Cornell Lab of Ornithology that offers automated analysis of multiple sound files to identify brid calla and can be downloaded here: https://birdnet.cornell.edu/ 
-
-During the analysis, BirdNET produces a csv result file for every minuite of recorded audio. Therefore, it is necessary to combine the output files for further analysis of the data. 
-
-The following code combines multiple csv output files into a single csv file. 
-
-```
-# Set the directory where your BirdNET output CSV files are located
-setwd("DEFINE PATH")
-
-# List all the CSV files in the directory
-csv_files <- list.files(pattern = "\\.csv$")
-
-# Initialize an empty dataframe to store the combined data
-combined_data <- data.frame()
-
-# Loop through each CSV file and read it into a temporary dataframe
-for (file in csv_files) {
-  birdNET_data <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
-  
-  # Combine the data from the temporary dataframe with the combined_data
-  combined_data <- rbind(combined_data, birdNET_data)
-}
-
-# Reset the working directory to its original value (optional)
-setwd("DEFINE PATH")
-
-# Write the combined data to a single CSV file
-write.csv(combined_data, file = "Combined_Results.csv", row.names = FALSE)
-```
-
-Next, we can subset the collated data to investigate all of the detections of a single species. 
-
-```
-library(lessR)
-
-####AudioMoth####
-
-combined_data <- read.table("AudioMoth_Combined_Results.txt", header = T, sep = "\t")
-
-#Subset data frame by species and calculate median and IQRs
-
-Barn_Owl <- combined_data[.(Common.name=="Barn Owl"), .(Scientific.name:Confidence)]
-Barn_Owl_IQR <- quantile(Barn_Owl$Confidence)
-
-Black_bellied_Plover <- combined_data[.(Common.name=="Black-bellied Plover"), .(Scientific.name:Confidence)]
-Black_bellied_Plover_IQR <- quantile(Black_bellied_Plover$Confidence)
-
-....
-```
-
-
-### Dealinig with spatial replication
 
 ### References
 
