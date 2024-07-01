@@ -8,7 +8,6 @@
 - [Part 2: Acoustic indices](#acoustic-indices)
 - [Part 3: Tapestry plots: Visualising long-term passive acoustic monitoring data](#tapestry-plots-visualising-long-term-passive-acoustic-monitoring-data)
 
-
 ### Ecoacoustic equipment and survey design
 
 #### Acoustic recorders
@@ -114,6 +113,12 @@ For example:
 Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: Soundscape ecology. R package version 1.3.3. https://CRAN.R-project.org/package=soundecology
 
 The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. However, 'seewave' is not optimally designed for the analysis of large datasets and is therefore not described in detail here. 
+
+#### Calculating acoustic indices using Kaleidoscope Pro
+
+Acoustic indices can also be calculated automatically using Kaleidoscope Pro, see https://www.wildlifeacoustics.com/products/kaleidoscope/sound-level-analysis for more information.
+
+![Kaleidoscope Pro](https://github.com/JackHalgh/Ecoacoustic-Analysis/assets/74665965/17b22f34-81c9-4899-ac74-7bfab369d5ee)
 
 ### Tapestry plots: Visualising long-term passive acoustic monitoring data 
 
