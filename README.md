@@ -6,9 +6,8 @@
 
 - [Part 1: Ecoacoustic equipment and survey design](#ecoacoustic-equipment-and-survey-design)
 - [Part 2: Acoustic indices](#acoustic-indices)
-- [Part 3: Data handling and manipulation](#data-handling-and-manipulation)
-- [Part 4: Data visulisation](#data-visulisation)
-- [Part 5: Dealing with spatial replication](#dealinig-with-spatial-replication)
+- [Part 3: Tapestry plots: Visualising long-term passive acoustic monitoring data](#tapestry-plots-visualising-long-term-passive-acoustic-monitoring-data)
+
 
 ### Ecoacoustic equipment and survey design
 
