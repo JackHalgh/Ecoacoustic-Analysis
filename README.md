@@ -135,7 +135,7 @@ First, the Kaleidoscope Pro output files are imported into R and subset accordin
 (Above) Habitats characterised by dense tree cover at lower elevations, such as beech dominated deciduous woodland (1,250 m) and Scots pine forests on the valley slopes (1,250 m – 1,800 m), showed evidence of a significant amount of bird song represented as dark green, with clear demarcations for the dawn and dusk choruses. Bush cricket stridulation was also detected in the evenings (20:00 – 00:00) between July and September represented by orange.  
 
 
-#### Tapestry plots: Step 1: Subsetting, cleaning, and running a global PCA. 
+#### Tapestry plots: Step 1: Cleaning, subsetting, and running a global PCA. 
 
 ```
 # Set seed, locale, and working directory
@@ -217,7 +217,7 @@ All_Data_Cleaned <- All_Data_scaled[, -highly_correlated_indices]
 # Print the cleaned dataframe
 head(All_Data_Cleaned)
 
-#### Step 2. Perform Principal Component Analysis ####
+#### Perform global Principal Component Analysis ####
 
 indices_pca <- prcomp(All_Data_Cleaned, scale. = F)
 indices_pca$PC1 <- indices_pca$x[,1]
@@ -261,7 +261,7 @@ head(coef_min_max_norm)
 colnames(coef_min_max_norm) <- c("PC1", "PC2", "PC3")
 All_Data_Cleaned <- cbind(All_Data_Cleaned, coef_min_max_norm)
 
-#### Step 4. Generate HEX colour codes from RGB #### 
+#### Generate HEX colour codes from RGB #### 
 
 library(ggplot2)
 library(reshape2)
@@ -279,11 +279,11 @@ write.csv(All_Data_Final, "All Data Final.csv")
 
 ```
 
-#### Step 5. Sub-setting by AudioMoth #### 
+#### Subsetting by AudioMoth #### 
 
 At this point it is important to understand the data structure that this code was written for. 
 
-The survey area was divided into 8 zones, containing 23 sites. 5 habitats, and 36 recorders.  
+Our survey area was divided into 8 zones, containing 23 sites, 5 habitats, and 36 recorders.  
 | Zone        | Site | Habitat   | AudioMoth |
 |-------------|------|-----------|-----------|
 | Z01_PARADOR | S001 | MATORRAL  | J008      |
@@ -296,6 +296,7 @@ Z02-PRADERASUR_S004-HAYABE_J001_220712-220901, which forms the FOLDER column in 
 
 The next section of code finds unique folder names in the FOLDER column to subset AudioMoths within the kaleidoscope output files. 
 
+Adapt the code accordingly to your data structure to find unique folder names. 
 ```
 
 # Find unique values in the 'FOLDER' column
