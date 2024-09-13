@@ -146,8 +146,8 @@ setwd("you_directory_here")
 library(readxl)
 
 # Read the Excel files
-disk1 <- read_excel("acousticindex1.xlsx")
-disk2 <- read_excel("acousticindex2.xlsx")
+disk1 <- read_excel("your_kaleidoscope_output_1.xlsx")
+disk2 <- read_excel("your_kaleidoscope_output_1.xlsx")
 
 # Append disk2 to the bottom of disk1
 All_Data <- rbind(disk1, disk2)
@@ -277,7 +277,26 @@ head(All_Data_Final)
 
 write.csv(All_Data_Final, "All Data Final.csv")
 
-#### Step 5. Sub-setting by recorder #### 
+```
+
+#### Step 5. Sub-setting by AudioMoth #### 
+
+At this point it is important to understand the data structure that this code was written for. 
+
+The survey area was divided into 8 zones, containing 23 sites. 5 habitats, and 36 recorders.  
+| Zone        | Site | Habitat   | AudioMoth |
+|-------------|------|-----------|-----------|
+| Z01_PARADOR | S001 | MATORRAL  | J008      |
+| Z01_PARADOR | S002 | PINO SILV | J003      |
+| Z01_PARADOR | S003 | PINO SILV | J016      |
+| Z01_PARADOR | S016 | MATORRAL  | J009      |
+
+As such, the folders containing the audio files that were downloaded from the field were named using the following structure: 
+Z02-PRADERASUR_S004-HAYABE_J001_220712-220901, which forms the FOLDER column in the final dataset. 
+
+The next section of code finds unique folder names in the FOLDER column to subset AudioMoths within the kaleidoscope output files. 
+
+```
 
 # Find unique values in the 'FOLDER' column
 unique_folders <- unique(All_Data_Final$`All_Data_filtered$FOLDER`)
