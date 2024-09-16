@@ -296,7 +296,7 @@ Z02-PRADERASUR_S004-HAYABE_J001_220712-220901, which forms the FOLDER column in 
 
 The next section of code finds unique folder names in the FOLDER column to subset AudioMoths within the kaleidoscope output files. 
 
-Adapt the code accordingly to your data structure to find unique folder names. 
+Adapt the code accordingly to your data structure to find unique folder names. However, so long as the data from each AudioMoth are grouped by a unique name within a column called FOLDER, the following code should automatically subset them for you.
 ```
 
 # Find unique values in the 'FOLDER' column
