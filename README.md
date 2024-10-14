@@ -632,7 +632,7 @@ for (file in files) {
 
 ```
 
-#### False-colour spectrograms: Plotting 24 hrs of acoustic data. 
+#### False-colour spectrograms: Plotting 24 hrs of acoustic data with noise reduction. 
 
 ![Ordesa Summer 24 hr spec](https://github.com/user-attachments/assets/48f0378d-b104-4dca-ae11-180b91eb9925)
 
