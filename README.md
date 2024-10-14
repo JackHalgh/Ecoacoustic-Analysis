@@ -7,6 +7,7 @@
 - [Part 1: Ecoacoustic equipment and survey design](#ecoacoustic-equipment-and-survey-design)
 - [Part 2: Acoustic indices](#acoustic-indices)
 - [Part 3: Tapestry plots: Visualising long-term passive acoustic monitoring data](#tapestry-plots-visualising-long-term-passive-acoustic-monitoring-data)
+- [Part 4: False-colour spectrograms: Visualising 24 hrs of passive acoustic monitoring data](#false-colour-spectrograms-plotting-24-hrs-of-acoustic-data-with-noise-reduction)
 
 ### Ecoacoustic equipment and survey design
 
