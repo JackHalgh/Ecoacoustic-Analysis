@@ -75,26 +75,103 @@ Reference: Greenhalgh, J. A., Genner, M. J., Jones, G., & Desjonquères, C. (202
 Multiple acoustic indices can be calculated in bulk using the'soundecology' package in R Studio (Villanueva-Rivera & Pijanowski, 2018)
 
 ```
-install.packages("soundecology")
+# Required Libraries
+library(seewave)
+library(tuneR)
 library(soundecology)
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+audio_dir <- "C:/Users/Administrador/Downloads/R/Gault/Example files"
+files <- list.files(path = audio_dir, pattern = "(?i)\\.wav$", full.names = TRUE)
+
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "acoustic_complexity.csv",
                 soundindex = "acoustic_complexity")
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "acoustic_diversity.csv",
                 soundindex = "acoustic_diversity")
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "acoustic_evenness.csv",
                 soundindex = "acoustic_evenness")
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "bioacoustic_index.csv",
                 soundindex = "bioacoustic_index")
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "H.csv",
                 soundindex = "H")
 
-multiple_sounds("name_of_your_respository", resultfile = "name_of_your_output.csv",
+multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
+                resultfile = "ndsi.csv",
                 soundindex = "ndsi")
+
+# Define the list of resultfile names
+resultfiles <- c("acoustic_complexity.csv", "acoustic_diversity.csv", 
+                 "acoustic_evenness.csv", "bioacoustic_index.csv", 
+                 "H.csv", "ndsi.csv")
+
+# Create an empty list to store the data frames
+data_list <- list()
+
+# Loop over each resultfile and read it into the list
+for (file in resultfiles) {
+  file_path <- paste("C:/Users/Administrador/Downloads/R/Gault/Example files/", file, sep = "")
+  
+  # Read the csv into a data frame
+  df <- read.csv(file_path)
+  
+  # Extract the file name without the '.csv' extension
+  file_name <- tools::file_path_sans_ext(file)
+  
+  # Rename the LEFT_CHANNEL column to the name of the file (without .csv)
+  colnames(df)[colnames(df) == "LEFT_CHANNEL"] <- file_name
+  
+  # Store the modified data frame in the list
+  data_list[[file]] <- df
+  
+  # Print the data frame to verify the change
+  print(paste("Data for file:", file))
+  print(head(df))  # Print the first few rows of the data frame to verify
+}
+
+# Remove duplicates based on the 'FILENAME' column from each data frame
+data_list_cleaned <- lapply(data_list, function(df) {
+  df <- df[!duplicated(df$FILENAME), ]
+  return(df)
+})
+
+# Subset each data frame to keep only 'FILENAME' and the renamed sound index column
+data_list_subset <- lapply(names(data_list_cleaned), function(file) {
+  df <- data_list_cleaned[[file]]
+  index_name <- tools::file_path_sans_ext(file)
+  
+  # Keep only FILENAME and the index column
+  df_subset <- df[, c("FILENAME", index_name)]
+  return(df_subset)
+})
+
+# Optionally name the list elements by index name
+names(data_list_subset) <- tools::file_path_sans_ext(resultfiles)
+
+# Print each subset to verify
+for (name in names(data_list_subset)) {
+  cat("\nSubset data for:", name, "\n")
+  print(head(data_list_subset[[name]]))
+}
+
+# Merge all data frames in data_list_subset by FILENAME
+merged_data <- Reduce(function(x, y) merge(x, y, by = "FILENAME", all = TRUE), data_list_subset)
+
+# View the merged result
+print(head(merged_data))
+
+# Save to CSV
+write.csv(merged_data, "C:/Users/Administrador/Downloads/R/Gault/Example files/merged_indices.csv", row.names = FALSE)
+
+merged_indices <- read.csv("merged_indices.csv")
+
 ```
 It is also possible to specify the min and max frequency, cluster size, and FFT window size. 
 
