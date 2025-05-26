@@ -75,102 +75,145 @@ Reference: Greenhalgh, J. A., Genner, M. J., Jones, G., & Desjonquères, C. (202
 Multiple acoustic indices can be calculated in bulk using the'soundecology' package in R Studio (Villanueva-Rivera & Pijanowski, 2018)
 
 ```
-# Required Libraries
+#### Required Libraries ####
 library(seewave)
 library(tuneR)
 library(soundecology)
+library(tools)
+library(parallel)
+library(doParallel)
+library(foreach)
 
-audio_dir <- "C:/Users/Administrador/Downloads/R/Gault/Example files"
+#### Set Directory ####
+audio_dir <- file.path("C:/Users/jgreenhalgh/Downloads/Gault/One day test sample/One day test sample")
+
+# List all .wav files in the target directory
 files <- list.files(path = audio_dir, pattern = "(?i)\\.wav$", full.names = TRUE)
 
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "acoustic_complexity.csv",
-                soundindex = "acoustic_complexity")
+#### Part 1: Soundecology indices (Parallelized) ####
 
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "acoustic_diversity.csv",
-                soundindex = "acoustic_diversity")
+# Define indices to compute
+soundecology_indices <- c("acoustic_complexity", "acoustic_diversity", "acoustic_evenness",
+                          "bioacoustic_index", "H", "ndsi")
 
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "acoustic_evenness.csv",
-                soundindex = "acoustic_evenness")
+# Set up parallel backend
+num_cores <- detectCores()
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
 
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "bioacoustic_index.csv",
-                soundindex = "bioacoustic_index")
+# Compute all indices in parallel
+foreach(index = soundecology_indices, .packages = "soundecology") %dopar% {
+  result_file <- paste0(index, ".csv")
+  multiple_sounds(audio_dir, resultfile = result_file, soundindex = index)
+}
 
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "H.csv",
-                soundindex = "H")
-
-multiple_sounds("C:/Users/Administrador/Downloads/R/Gault/Example files", 
-                resultfile = "ndsi.csv",
-                soundindex = "ndsi")
-
-# Define the list of resultfile names
-resultfiles <- c("acoustic_complexity.csv", "acoustic_diversity.csv", 
-                 "acoustic_evenness.csv", "bioacoustic_index.csv", 
-                 "H.csv", "ndsi.csv")
+# List generated result files
+resultfiles <- list.files(path = audio_dir, pattern = "\\.csv$", full.names = FALSE)
 
 # Create an empty list to store the data frames
 data_list <- list()
 
-# Loop over each resultfile and read it into the list
+# Loop over each result file and read into the list
 for (file in resultfiles) {
-  file_path <- paste("C:/Users/Administrador/Downloads/R/Gault/Example files/", file, sep = "")
+  file_path <- file.path(audio_dir, file)
   
-  # Read the csv into a data frame
-  df <- read.csv(file_path)
-  
-  # Extract the file name without the '.csv' extension
-  file_name <- tools::file_path_sans_ext(file)
-  
-  # Rename the LEFT_CHANNEL column to the name of the file (without .csv)
-  colnames(df)[colnames(df) == "LEFT_CHANNEL"] <- file_name
-  
-  # Store the modified data frame in the list
-  data_list[[file]] <- df
-  
-  # Print the data frame to verify the change
-  print(paste("Data for file:", file))
-  print(head(df))  # Print the first few rows of the data frame to verify
+  if (file.exists(file_path)) {
+    df <- read.csv(file_path)
+    if (!"FILENAME" %in% names(df)) next  # Skip unrelated CSVs
+    df$FILENAME <- tolower(df$FILENAME)  # Normalize for merging
+    index_name <- file_path_sans_ext(file)
+    
+    if ("LEFT_CHANNEL" %in% names(df)) {
+      colnames(df)[colnames(df) == "LEFT_CHANNEL"] <- index_name
+    }
+    
+    data_list[[file]] <- df
+    cat("\nData for file:", file, "\n")
+    print(head(df))
+  }
 }
 
-# Remove duplicates based on the 'FILENAME' column from each data frame
-data_list_cleaned <- lapply(data_list, function(df) {
-  df <- df[!duplicated(df$FILENAME), ]
-  return(df)
-})
+# Remove duplicates by FILENAME
+data_list_cleaned <- lapply(data_list, function(df) df[!duplicated(df$FILENAME), ])
 
-# Subset each data frame to keep only 'FILENAME' and the renamed sound index column
+# Keep only FILENAME and the index column
 data_list_subset <- lapply(names(data_list_cleaned), function(file) {
   df <- data_list_cleaned[[file]]
-  index_name <- tools::file_path_sans_ext(file)
-  
-  # Keep only FILENAME and the index column
-  df_subset <- df[, c("FILENAME", index_name)]
-  return(df_subset)
+  index_name <- file_path_sans_ext(file)
+  if (index_name %in% names(df)) {
+    df_subset <- df[, c("FILENAME", index_name)]
+    return(df_subset)
+  }
 })
+names(data_list_subset) <- file_path_sans_ext(resultfiles)
 
-# Optionally name the list elements by index name
-names(data_list_subset) <- tools::file_path_sans_ext(resultfiles)
+# Merge all soundecology index data
+merged_soundecology_indices <- Reduce(function(x, y) merge(x, y, by = "FILENAME", all = TRUE), data_list_subset)
+print(head(merged_soundecology_indices))
 
-# Print each subset to verify
-for (name in names(data_list_subset)) {
-  cat("\nSubset data for:", name, "\n")
-  print(head(data_list_subset[[name]]))
+# Save merged Soundecology data
+write.csv(merged_soundecology_indices, file.path(audio_dir, "merged_indices.csv"), row.names = FALSE)
+
+#### Part 2: Seewave indices (Parallelized) ####
+
+# Stop if no audio files found
+if (length(files) == 0) stop("❌ No .wav files found in the directory.")
+
+# Parallel processing using foreach
+results_list <- foreach(file = files, .combine = rbind, .packages = c("seewave", "tuneR")) %dopar% {
+  cat("Processing:", basename(file), "\n")
+  
+  tryCatch({
+    wav <- readWave(file)
+    
+    if (wav@stereo) wav <- mono(wav, "left")
+    if (wav@samp.rate != 44100) wav <- downsample(wav, 44100)
+    
+    spec_stats <- tryCatch(specprop(meanspec(wav, plot = FALSE)), error = function(e) NULL)
+    
+    data.frame(
+      FILENAME = tolower(basename(file)),
+      mean_freq = if (!is.null(spec_stats)) spec_stats$mean else NA,
+      sd_freq = if (!is.null(spec_stats)) spec_stats$sd else NA,
+      mode_freq = if (!is.null(spec_stats)) spec_stats$mode else NA,
+      median_freq = if (!is.null(spec_stats)) spec_stats$median else NA,
+      Q25 = if (!is.null(spec_stats)) spec_stats$Q25 else NA,
+      Q75 = if (!is.null(spec_stats)) spec_stats$Q75 else NA,
+      IQR = if (!is.null(spec_stats)) spec_stats$IQR else NA,
+      skewness = if (!is.null(spec_stats)) spec_stats$skewness else NA,
+      kurtosis = if (!is.null(spec_stats)) spec_stats$kurtosis else NA
+    )
+  }, error = function(e) {
+    cat("⚠️ Error processing", basename(file), ":", e$message, "\n")
+    NULL
+  })
 }
 
-# Merge all data frames in data_list_subset by FILENAME
-merged_data <- Reduce(function(x, y) merge(x, y, by = "FILENAME", all = TRUE), data_list_subset)
+# Stop parallel backend
+stopCluster(cl)
 
-# View the merged result
-print(head(merged_data))
+# Save Seewave indices
+if (!is.null(results_list) && nrow(results_list) > 0) {
+  write.csv(results_list, file.path(audio_dir, "acoustic_indices_summary.csv"), row.names = FALSE)
+  cat("✅ Done! Results saved to 'acoustic_indices_summary.csv'\n")
+} else {
+  cat("⚠️ No valid audio files processed.\n")
+}
 
-# Save to CSV
-write.csv(merged_data, "C:/Users/Administrador/Downloads/R/Gault/Example files/merged_indices.csv", row.names = FALSE)
+#### Final Merge: Seewave + Soundecology ####
 
-merged_indices <- read.csv("merged_indices.csv")
+head(results_list)
+head(merged_soundecology_indices)
+
+# Ensure FILENAME columns are character, trimmed, and lowercase
+results_list$FILENAME <- tolower(trimws(as.character(results_list$FILENAME)))
+merged_soundecology_indices$FILENAME <- tolower(trimws(as.character(merged_soundecology_indices$FILENAME)))
+
+# Merge
+merged_all_indices <- merge(results_list, merged_soundecology_indices, by = "FILENAME")
+
+# Save to file
+write.csv(merged_all_indices, file.path(audio_dir, "all_acoustic_indices_merged.csv"), row.names = FALSE)
 
 ```
 It is also possible to specify the min and max frequency, cluster size, and FFT window size. 
