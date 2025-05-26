@@ -85,7 +85,7 @@ library(doParallel)
 library(foreach)
 
 #### Set Directory ####
-audio_dir <- file.path("C:/Users/jgreenhalgh/Downloads/Gault/One day test sample/One day test sample")
+audio_dir <- file.path("INSERT YOUR DIRECTORY PATH HERE")
 
 # List all .wav files in the target directory
 files <- list.files(path = audio_dir, pattern = "(?i)\\.wav$", full.names = TRUE)
