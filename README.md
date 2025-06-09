@@ -235,6 +235,59 @@ Referecne: Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: S
 
 The package 'seewave' can also be used to calculate additional acoustic indcies, see [this link](https://cran.r-project.org/web/packages/seewave/seewave.pdf) for more information. However, 'seewave' is not optimally designed for the analysis of large datasets and is therefore not described in detail here. 
 
+#### Calculating acoustic indices in Python                                         
+
+```
+import os
+import pandas as pd
+from maad import sound
+import maad.features.alpha_indices as ai
+
+directory = r"C:\Users\jgreenhalgh\Downloads\Gault\One day test sample\One day test sample"
+
+results = []
+
+for filename in os.listdir(directory):
+    if filename.lower().endswith('.wav'):
+        filepath = os.path.join(directory, filename)
+        print(f"Processing {filename}...")
+
+        s, fs = sound.load(filepath)
+
+        Sxx_power, tn, fn, _ = sound.spectrogram(s, fs)
+
+        spectral = ai.all_spectral_alpha_indices(Sxx_power, tn, fn)
+        spectral_dict = spectral[0].iloc[0].to_dict()  # First DataFrame row to dict
+
+        temporal = ai.all_temporal_alpha_indices(s, fs)
+        temporal_dict = temporal.iloc[0].to_dict()
+
+        combined = {**spectral_dict, **temporal_dict}
+        combined['filename'] = filename
+
+        results.append(combined)
+
+df = pd.DataFrame(results)
+
+cols = ['filename'] + [c for c in df.columns if c != 'filename']
+df = df[cols]
+
+output_csv = os.path.join(directory, "alpha_acoustic_indices_results.csv")
+df.to_csv(output_csv, index=False)
+
+print(f"\nDone! Results saved to:\n{output_csv}")
+
+
+# Path to the result CSV
+csv_path = r"C:\Users\jgreenhalgh\Downloads\Gault\One day test sample\One day test sample\alpha_acoustic_indices_results.csv"
+
+# Read the CSV
+df = pd.read_csv(csv_path)
+
+# Display the first few rows
+print(df.head())
+```
+
 #### Calculating acoustic indices using Kaleidoscope Pro
 
 The analysis of large acoustic datasets in best handled by a program called Kaleidoscope Pro, see https://www.wildlifeacoustics.com/products/kaleidoscope/sound-level-analysis for more information.
