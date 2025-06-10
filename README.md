@@ -75,8 +75,8 @@ Reference: Greenhalgh, J. A., Genner, M. J., Jones, G., & Desjonquères, C. (202
 Multiple acoustic indices can be calculated in bulk using the'soundecology' package in R Studio (Villanueva-Rivera & Pijanowski, 2018)
 
 ```
-By Jack A. Greenhalgh, 19th May, 2025.
-Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
+#By Jack A. Greenhalgh, 19th May, 2025.
+#Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
 
 #### Required Libraries ####
 library(seewave)
@@ -243,8 +243,8 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 Download Anaconda via: https://www.anaconda.com/download and then run the code below in Spyder. 
 
 ```
-By Jack A. Greenhalgh, 10th June, 2025.
-Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
+#By Jack A. Greenhalgh, 10th June, 2025.
+#Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
 
 import os
 import pandas as pd
@@ -253,7 +253,7 @@ import maad.features.alpha_indices as ai
 from tqdm import tqdm  # Optional: shows progress bar
 
 # Main directory containing multiple folders with audio files
-main_directory = r"C:\Users\jgreenhalgh\Downloads\Gault\Simulated 1st deployment"
+main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
 
 # Loop through all subfolders in the main directory
 for foldername in os.listdir(main_directory):
