@@ -237,55 +237,68 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 
 #### Calculating acoustic indices in Python                                         
 
+Download Anadonca via: https://www.anaconda.com/download and then run the code below in Spyder. 
+
 ```
 import os
 import pandas as pd
 from maad import sound
 import maad.features.alpha_indices as ai
+from tqdm import tqdm  # Optional: shows progress bar
 
-directory = r"C:\Users\jgreenhalgh\Downloads\Gault\One day test sample\One day test sample"
+# Main directory containing multiple folders with audio files
+main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
 
-results = []
+# Loop through all subfolders in the main directory
+for foldername in os.listdir(main_directory):
+    folder_path = os.path.join(main_directory, foldername)
+    
+    # Proceed only if it's a directory
+    if os.path.isdir(folder_path):
+        print(f"\nProcessing folder: {foldername}")
+        results = []
+        
+        # List all .wav files in this subfolder
+        wav_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.wav')]
+        
+        for filename in tqdm(wav_files, desc=f"Files in {foldername}"):
+            filepath = os.path.join(folder_path, filename)
+            try:
+                # Load the audio
+                s, fs = sound.load(filepath)
 
-for filename in os.listdir(directory):
-    if filename.lower().endswith('.wav'):
-        filepath = os.path.join(directory, filename)
-        print(f"Processing {filename}...")
+                # Generate spectrogram
+                Sxx_power, tn, fn, _ = sound.spectrogram(s, fs)
 
-        s, fs = sound.load(filepath)
+                # Compute spectral alpha indices
+                spectral = ai.all_spectral_alpha_indices(Sxx_power, tn, fn)
+                spectral_dict = spectral[0].iloc[0].to_dict()
 
-        Sxx_power, tn, fn, _ = sound.spectrogram(s, fs)
+                # Compute temporal alpha indices
+                temporal = ai.all_temporal_alpha_indices(s, fs)
+                temporal_dict = temporal.iloc[0].to_dict()
 
-        spectral = ai.all_spectral_alpha_indices(Sxx_power, tn, fn)
-        spectral_dict = spectral[0].iloc[0].to_dict()  # First DataFrame row to dict
+                # Merge both sets of indices
+                combined = {**spectral_dict, **temporal_dict}
+                combined['filename'] = filename
 
-        temporal = ai.all_temporal_alpha_indices(s, fs)
-        temporal_dict = temporal.iloc[0].to_dict()
+                results.append(combined)
 
-        combined = {**spectral_dict, **temporal_dict}
-        combined['filename'] = filename
+            except Exception as e:
+                print(f"Error processing {filename} in {foldername}: {e}")
 
-        results.append(combined)
+        # If results were gathered, save to CSV named after the folder
+        if results:
+            df = pd.DataFrame(results)
+            cols = ['filename'] + [c for c in df.columns if c != 'filename']
+            df = df[cols].sort_values(by='filename').reset_index(drop=True)
 
-df = pd.DataFrame(results)
+            output_csv = os.path.join(folder_path, f"{foldername}_alpha_acoustic_indices_results.csv")
+            df.to_csv(output_csv, index=False)
 
-cols = ['filename'] + [c for c in df.columns if c != 'filename']
-df = df[cols]
-
-output_csv = os.path.join(directory, "alpha_acoustic_indices_results.csv")
-df.to_csv(output_csv, index=False)
-
-print(f"\nDone! Results saved to:\n{output_csv}")
-
-
-# Path to the result CSV
-csv_path = r"C:\Users\jgreenhalgh\Downloads\Gault\One day test sample\One day test sample\alpha_acoustic_indices_results.csv"
-
-# Read the CSV
-df = pd.read_csv(csv_path)
-
-# Display the first few rows
-print(df.head())
+            print(f"Results saved for folder '{foldername}' at:\n{output_csv}")
+        else:
+            print(f"No audio files processed in folder '{foldername}'.")
 ```
 
 #### Calculating acoustic indices using Kaleidoscope Pro
