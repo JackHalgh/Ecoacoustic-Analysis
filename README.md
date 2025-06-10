@@ -269,7 +269,7 @@ fmin = 1000     # Minimum frequency (Hz)
 fmax = 11000    # Maximum frequency (Hz)
 
 # Main directory containing multiple folders with audio files
-main_directory = r"C:\Users\jgreenhalgh\Downloads\Gault\Simulated 1st deployment"
+main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
 
 # =============================
 # Processing Loop
