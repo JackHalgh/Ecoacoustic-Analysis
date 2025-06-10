@@ -252,8 +252,28 @@ from maad import sound
 import maad.features.alpha_indices as ai
 from tqdm import tqdm  # Optional: shows progress bar
 
+# =============================
+# Configurable Parameters
+# =============================
+
+# Spectrogram parameters
+NFFT = 1024            # Number of FFT points (nperseg)
+noverlap = 512         # Overlap between segments
+window = 'hann'        # Type of window ('hann', 'hamming', etc.)
+
+# Temporal alpha indices parameters
+temporal_threshold_db = -50  # dB threshold for signal detection
+
+# Frequency range for spectral alpha indices
+fmin = 1000     # Minimum frequency (Hz)
+fmax = 11000    # Maximum frequency (Hz)
+
 # Main directory containing multiple folders with audio files
-main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
+main_directory = r"C:\Users\jgreenhalgh\Downloads\Gault\Simulated 1st deployment"
+
+# =============================
+# Processing Loop
+# =============================
 
 # Loop through all subfolders in the main directory
 for foldername in os.listdir(main_directory):
@@ -270,18 +290,22 @@ for foldername in os.listdir(main_directory):
         for filename in tqdm(wav_files, desc=f"Files in {foldername}"):
             filepath = os.path.join(folder_path, filename)
             try:
-                # Load the audio
+                # Load the audio file
                 s, fs = sound.load(filepath)
 
-                # Generate spectrogram
-                Sxx_power, tn, fn, _ = sound.spectrogram(s, fs)
+                # Generate spectrogram with parameters
+                Sxx_power, tn, fn, _ = sound.spectrogram(
+                    s, fs, window=window, nperseg=NFFT, noverlap=noverlap
+                )
 
-                # Compute spectral alpha indices
-                spectral = ai.all_spectral_alpha_indices(Sxx_power, tn, fn)
+                # Compute spectral alpha indices with frequency limits
+                spectral = ai.all_spectral_alpha_indices(
+                    Sxx_power, tn, fn, fmin=fmin, fmax=fmax
+                )
                 spectral_dict = spectral[0].iloc[0].to_dict()
 
-                # Compute temporal alpha indices
-                temporal = ai.all_temporal_alpha_indices(s, fs)
+                # Compute temporal alpha indices with threshold
+                temporal = ai.all_temporal_alpha_indices(s, fs, threshold=temporal_threshold_db)
                 temporal_dict = temporal.iloc[0].to_dict()
 
                 # Merge both sets of indices and tag filename with folder
