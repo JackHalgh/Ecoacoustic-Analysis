@@ -250,74 +250,80 @@ import os
 import pandas as pd
 from maad import sound
 import maad.features.alpha_indices as ai
-from tqdm import tqdm  # Optional: shows progress bar
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # =============================
 # Configurable Parameters
 # =============================
 
 # Spectrogram parameters
-NFFT = 1024            # Number of FFT points (nperseg)
-noverlap = 512         # Overlap between segments
-window = 'hann'        # Type of window ('hann', 'hamming', etc.)
+NFFT = 1024
+noverlap = 512
+window = 'hann'
 
-# Temporal alpha indices parameters
-temporal_threshold_db = -50  # dB threshold for signal detection
+# Temporal alpha indices
+temporal_threshold_db = -50
 
-# Frequency range for spectral alpha indices
-fmin = 1000     # Minimum frequency (Hz)
-fmax = 11000    # Maximum frequency (Hz)
+# Frequency range
+fmin = 1000
+fmax = 10000
 
-# Main directory containing multiple folders with audio files
+# Main directory
 main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
 
 # =============================
-# Processing Loop
+# File Processing Function
 # =============================
 
-# Loop through all subfolders in the main directory
-for foldername in os.listdir(main_directory):
-    folder_path = os.path.join(main_directory, foldername)
-    
-    # Proceed only if it's a directory
-    if os.path.isdir(folder_path):
+def process_file(foldername, folder_path, filename):
+    filepath = os.path.join(folder_path, filename)
+    try:
+        s, fs = sound.load(filepath)
+        Sxx_power, tn, fn, _ = sound.spectrogram(
+            s, fs, window=window, nperseg=NFFT, noverlap=noverlap
+        )
+
+        spectral = ai.all_spectral_alpha_indices(
+            Sxx_power, tn, fn, fmin=fmin, fmax=fmax
+        )
+        spectral_dict = spectral[0].iloc[0].to_dict()
+
+        temporal = ai.all_temporal_alpha_indices(s, fs, threshold=temporal_threshold_db)
+        temporal_dict = temporal.iloc[0].to_dict()
+
+        combined = {**spectral_dict, **temporal_dict}
+        combined['filename'] = f"{foldername}_{filename}"
+        return combined
+
+    except Exception as e:
+        print(f"Error processing {filename} in {foldername}: {e}")
+        return None
+
+# =============================
+# Main Script (One Folder at a Time)
+# =============================
+
+if __name__ == "__main__":
+    foldernames = [f for f in os.listdir(main_directory) if os.path.isdir(os.path.join(main_directory, f))]
+
+    for foldername in foldernames:
+        folder_path = os.path.join(main_directory, foldername)
         print(f"\nProcessing folder: {foldername}")
         results = []
-        
-        # List all .wav files in this subfolder
+
         wav_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.wav')]
-        
-        for filename in tqdm(wav_files, desc=f"Files in {foldername}"):
-            filepath = os.path.join(folder_path, filename)
-            try:
-                # Load the audio file
-                s, fs = sound.load(filepath)
 
-                # Generate spectrogram with parameters
-                Sxx_power, tn, fn, _ = sound.spectrogram(
-                    s, fs, window=window, nperseg=NFFT, noverlap=noverlap
-                )
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(process_file, foldername, folder_path, f): f for f in wav_files
+            }
 
-                # Compute spectral alpha indices with frequency limits
-                spectral = ai.all_spectral_alpha_indices(
-                    Sxx_power, tn, fn, fmin=fmin, fmax=fmax
-                )
-                spectral_dict = spectral[0].iloc[0].to_dict()
+            for future in tqdm(as_completed(futures), total=len(futures), desc=f"Files in {foldername}"):
+                result = future.result()
+                if result:
+                    results.append(result)
 
-                # Compute temporal alpha indices with threshold
-                temporal = ai.all_temporal_alpha_indices(s, fs, threshold=temporal_threshold_db)
-                temporal_dict = temporal.iloc[0].to_dict()
-
-                # Merge both sets of indices and tag filename with folder
-                combined = {**spectral_dict, **temporal_dict}
-                combined['filename'] = f"{foldername}_{filename}"  # Add folder prefix to filename
-
-                results.append(combined)
-
-            except Exception as e:
-                print(f"Error processing {filename} in {foldername}: {e}")
-
-        # If results were gathered, save to CSV named after the folder
         if results:
             df = pd.DataFrame(results)
             cols = ['filename'] + [c for c in df.columns if c != 'filename']
@@ -326,9 +332,9 @@ for foldername in os.listdir(main_directory):
             output_csv = os.path.join(folder_path, f"{foldername}_alpha_acoustic_indices_results.csv")
             df.to_csv(output_csv, index=False)
 
-            print(f"Results saved for folder '{foldername}' at:\n{output_csv}")
+            print(f"✔ Results saved for folder '{foldername}' at:\n{output_csv}")
         else:
-            print(f"No audio files processed in folder '{foldername}'.")
+            print(f"⚠ No audio files processed in folder '{foldername}'.")
 ```
 
 #### Calculating acoustic indices using Kaleidoscope Pro
