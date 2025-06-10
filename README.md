@@ -253,7 +253,7 @@ import maad.features.alpha_indices as ai
 from tqdm import tqdm  # Optional: shows progress bar
 
 # Main directory containing multiple folders with audio files
-main_directory = r"INSERT YOUR DIRECTORY PATH HERE"
+main_directory = r"C:\Users\jgreenhalgh\Downloads\Gault\Simulated 1st deployment"
 
 # Loop through all subfolders in the main directory
 for foldername in os.listdir(main_directory):
@@ -284,9 +284,9 @@ for foldername in os.listdir(main_directory):
                 temporal = ai.all_temporal_alpha_indices(s, fs)
                 temporal_dict = temporal.iloc[0].to_dict()
 
-                # Merge both sets of indices
+                # Merge both sets of indices and tag filename with folder
                 combined = {**spectral_dict, **temporal_dict}
-                combined['filename'] = filename
+                combined['filename'] = f"{foldername}_{filename}"  # Add folder prefix to filename
 
                 results.append(combined)
 
