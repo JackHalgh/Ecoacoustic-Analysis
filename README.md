@@ -237,7 +237,7 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 
 #### Calculating acoustic indices in Python                                         
 
-Download Anadonca via: https://www.anaconda.com/download and then run the code below in Spyder. 
+Download Anaconda via: https://www.anaconda.com/download and then run the code below in Spyder. 
 
 ```
 import os
