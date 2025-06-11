@@ -243,7 +243,7 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 Download Anaconda via: https://www.anaconda.com/download and then run the code below in Spyder. 
 
 ```
-#By Jack A. Greenhalgh, 10th June, 2025.
+#By Jack A. Greenhalgh. June, 2025.
 #Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
 
 import os
@@ -358,315 +358,104 @@ First, the Kaleidoscope Pro output files are imported into R and subset accordin
 (Above) Habitats characterised by dense tree cover at lower elevations, such as beech dominated deciduous woodland (1,250 m) and Scots pine forests on the valley slopes (1,250 m – 1,800 m), showed evidence of a significant amount of bird song represented as dark green, with clear demarcations for the dawn and dusk choruses. Bush cricket stridulation was also detected in the evenings (20:00 – 00:00) between July and September represented by orange.  
 
 
-#### Tapestry plots: Step 1: Cleaning, subsetting, and running a global PCA. 
+#### Subsetting and cleaning acoustic indices data
 
 ```
-# Remove all objects in the global environment
-set.seed(123)
-rm(list = ls())
-setwd("C:/Users/Administrador/Downloads/R/Ordesa/Data analysis Oct")
+#By Jack A. Greenhalgh & José Joaquín Lahoz Monfort. Feb, 2025.
+#Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
 
-# Could it be that datetimes with multiple copies of the same are confusing the order. 
-# Try ordering with date times and FOLDER.  
-
-library(readxl)
+# load all libraries needed
 library(dplyr)
-
-# Read the Excel files
-ordesa_1 <- read_excel("acousticindex_Ordesa1_alldata.xlsx")
-ordesa_2 <- read_excel("acousticindex_Ordesa2_alldata.xlsx")
-ordesa_3 <- read_excel("acousticindex_Ordesa1_newdata.xlsx")
-ordesa_4 <- read_excel("acousticindex_Ordesa2_newdata.xlsx")
-
-# Remove the 'ADI' and 'AEI' columns
-ordesa_3 <- ordesa_3 %>%
-  select(-ADI, -AEI)
-
-# Remove the 'ADI' and 'AEI' columns
-ordesa_4 <- ordesa_4 %>%
-  select(-ADI, -AEI)
-
-All_Data <- rbind(ordesa_1, ordesa_2, ordesa_3, ordesa_4)
-
-# Display the combined cleaned data
-head(All_Data)
-
-# Omit NAs
-All_Data <- na.omit(All_Data)
-
-write.csv(All_Data, "All_Data.csv")
-
-####Sub-setting data frames####
-
-# Load all data as a shortcut 
-
 library(readxl)
+library(tuneR)
+library(seewave)
+library(signal)
+library(entropy)
+library(ggplot2)
+library(viridis)
 library(dplyr)
+library(caret)
+library(corrplot)
+library(tidyverse)
+library(scales)
+library(purrr)
+library(gtools)
+library(lubridate)
 
-All_Data <- read.csv("All_Data.csv")
+##### Part 1) Read all data and merge in single curated dataset ---------------------
 
-# Sub-setting to keep only rows with DURATION >= 60
+### [Run only once initially] Create raw dataset:
+# Read raw .csv files 
+HardDrive_1 <- read_excel("INSERT FILE PATH.xlsx")
+HardDrive_2 <- read_excel("INSERT FILE PATH.xlsx")
+
+# Merge them in a single large dataframe (accounting for possible differences in columns)
+All_Data <- rbind(HardDrive_1, HardDrive_2)
+
+# Remove entries lasting < 60 seconds
 All_Data <- All_Data[All_Data$DURATION >= 60, ]
 
+# Remove entries with NAs
 All_Data <- na.omit(All_Data)
 
-# Convert the IN.FILE to a date-time object
-All_Data$Datetime <- as.POSIXct(gsub("_", " ", gsub(".WAV", "", All_Data$IN.FILE)), 
-                                format = "%Y%m%d %H%M%S")
+# Convert the IN FILE to a date-time object
+attach(All_Data)
+All_Data$Datetime <- as.POSIXct(gsub("_", " ", gsub(".WAV", "", All_Data$'IN FILE')), 
+                                format = "%Y%m%d %H%M%S", tz = "UTC")
+head(All_Data)
+class(All_Data$Datetime)
+
+# Check for NAs in the Datetime variable
+sum(is.na(All_Data$Datetime))
 
 # Sort the data frame by the new Datetime column
 All_Data <- All_Data[order(All_Data$Datetime), ]
 
-head(All_Data)
+## Calculate and plot correlation matrix
+correlation_data <- All_Data[,ADD FIRST AI COLUMN:ADD LAST AI COLUMN]  # Extract ac index columns
 
-min(All_Data$DATE)
-max(All_Data$DATE)
+# Display the first few rows of the scaled data frame
+head(correlation_data)
 
-# Load necessary library
+# Calculate correlation matrix
+correlation_matrix <- cor(correlation_data)
+correlation_matrix
 
-# View the updated data frame
-head(All_Data)
+## Remove acoustic indices with high correlation
 
-All_Data <- na.omit(All_Data)
+threshold <- 0.8  # Set a threshold 
+
+# Plot correlation matrix
+corrplot(correlation_matrix, method = "square")
+
+# Find highly correlated variables
+highly_correlated <- findCorrelation(correlation_matrix, cutoff = threshold)
+
+# Get names of highly correlated variables
+highly_correlated_names <- colnames(correlation_matrix)[highly_correlated]
+highly_correlated_names
 
 # Remove highly correlated variables
 All_Data <- All_Data %>%
-  select(-X, -EVN, -SFM, -Q75, -SH, -MEAN, -IQR, -MEDIAN, -SEM, -SKEW, -CENT)
+  select(-VAR1, -VAR2, -VAR3, ETC..)
 
-# Retrieving Global PCA subset
+# Save final dataframe as csv
+write.csv(All_Data, file="INSERT YOUR FILE NAME HERE.csv")
 
-# Define the date range
-start_date <- as.POSIXct("2023-08-12", format = "%Y-%m-%d", tz = "UTC")
-end_date <- as.POSIXct("2024-08-12", format = "%Y-%m-%d", tz = "UTC")
-
-# Filter the data based on the Datetime column
-Global_PCA_Subset <- All_Data[All_Data$Datetime >= start_date & All_Data$Datetime <= end_date, ]
-Global_PCA_Subset <- na.omit(Global_PCA_Subset)
-
-# Add a 'Type' column with 'Baseline'
-Global_PCA_Subset$Type <- "Baseline"
-
-# View the filtered data frame
-head(Global_PCA_Subset)
-
-# Retrieving new data subset
-
-# Define the start and end dates for exclusion
-start_date <- as.POSIXct("2023-08-12", format = "%Y-%m-%d", tz = "UTC")
-end_date <- as.POSIXct("2024-08-12", format = "%Y-%m-%d", tz = "UTC")
-
-# Clean column names just to ensure there are no leading/trailing spaces
-colnames(All_Data) <- trimws(colnames(All_Data))
-
-# Ensure Datetime is in POSIXct format (it looks like it already is, but just for safety)
-All_Data <- All_Data %>%
-  mutate(Datetime = as.POSIXct(Datetime, format="%Y-%m-%d %H:%M:%S", tz="UTC"))
-
-# Check if Datetime is properly created
-print(head(All_Data$Datetime))  # View the first few Datetime values
-
-# Check if the Datetime column exists
-if ("Datetime" %in% colnames(All_Data)) {
-  # Filter out entries within the date range
-  New_Data_Subset <- All_Data %>%
-    filter(!is.na(Datetime) & !(Datetime >= start_date & Datetime <= end_date))
-  
-  # Add a 'Type' column with 'New data'
-  New_Data_Subset$Type <- "New data"
-  
-  # View the first few rows of the new subset to confirm
-  print(head(New_Data_Subset))
-} else {
-  stop("Datetime column is not found after mutation.")
-}
-
-# View the filtered new data subset
-head(New_Data_Subset)
-
-New_Data_Subset <- New_Data_Subset[order(New_Data_Subset$IN.FILE), ]
-new_data_datetime_df <- as.data.frame(New_Data_Subset$Datetime)
-
-Global_PCA_Subset <- Global_PCA_Subset[order(Global_PCA_Subset$IN.FILE), ]
-global_datetime_df <- as.data.frame(Global_PCA_Subset$Datetime)
-
-Global_PCA_Subset <- Global_PCA_Subset %>%
-  select(-FOLDER, -IN.FILE, -CHANNEL, -OFFSET, -DURATION, -DATE, -TIME, -HOUR)
-
-New_Data_Subset <- New_Data_Subset %>%
-  select(-FOLDER, -IN.FILE, -CHANNEL, -OFFSET, -DURATION, -DATE, -TIME, -HOUR)
-
-Global_PCA_Subset <- Global_PCA_Subset %>%
-  select(-Datetime, -Type)
-
-New_Data_Subset <- New_Data_Subset %>%
-  select(-Datetime, -Type)
-
-####Scaling data####
-
-library(scales)
-
-head(Global_PCA_Subset)
-
-# Perform min-max scaling for all columns except the 'Type' column
-Global_PCA_Subset_Scaled <- Global_PCA_Subset %>%
-  mutate(across(everything(), ~ rescale(.x, to = c(0, 1))))
-
-New_Data_Subset_Scaled <- New_Data_Subset %>%
-  mutate(across(everything(), ~ rescale(.x, to = c(0, 1))))
-
-# View the first few rows of both data frames
-head(Global_PCA_Subset_Scaled)
-head(New_Data_Subset_Scaled)
-
-#PCA.
-
-#### Applying global PCA to new data ####
-
-# Step 1: Perform PCA on Global_PCA_Baseline
-set.seed(123)
-
-# Re-center the data (use the mean of the baseline data for both data sets)
-pca_baseline <- prcomp(Global_PCA_Subset_Scaled, center = TRUE, scale. = FALSE)
-
-# Extract the first three components for the baseline data
-pca_components_baseline <- pca_baseline$x[, 1:3]  # First three principal components
-
-summary(pca_baseline)
-print(pca_baseline)
-
-# Step 2: Project All_New_Data onto the PCA space
-# Make sure to use the same center (mean) and scale as the baseline PCA
-all_new_data_matrix <- as.matrix(New_Data_Subset_Scaled)
-
-# Center the new data using the baseline PCA mean (since PCA already centers baseline data)
-new_data_centered <- scale(all_new_data_matrix, center = pca_baseline$center, scale = F)
-
-# Project the new data onto the PCA space using the baseline rotation matrix
-pca_new_data <- new_data_centered %*% pca_baseline$rotation[, 1:3]  # First three PCA loadings
-
-# Combine Results (Optional)
-# Combine PCA components into data frames
-pca_baseline_df <- as.data.frame(pca_components_baseline)
-pca_new_data_df <- as.data.frame(pca_new_data)
-
-# Add Extracted_Date and Extracted_Time to baseline_df
-Global_PCA_Combined_df <- cbind(pca_baseline_df, 
-                                Datetime = global_datetime_df)
-Global_PCA_Combined_df$Type <- "Baseline"
-colnames(Global_PCA_Combined_df)[colnames(Global_PCA_Combined_df) == "Global_PCA_Datetimes"] <- "Datetime"
-
-# Add Extracted_Date and Extracted_Time to new_data_df
-New_Data_combined_df <- cbind(pca_new_data_df, 
-                              Datetime = new_data_datetime_df)
-New_Data_combined_df$Type <- "New data"
-colnames(New_Data_combined_df)[colnames(New_Data_combined_df) == "New_Data_Datetimes"] <- "Datetime"
-
-head(Global_PCA_Combined_df)
-head(New_Data_combined_df)
-
-# Rename 'New_Data_Subset$Datetime' column to 'Datetime'
-colnames(New_Data_combined_df)[colnames(New_Data_combined_df) == "New_Data_Subset$Datetime"] <- "Datetime"
-colnames(Global_PCA_Combined_df)[colnames(Global_PCA_Combined_df) == "Global_PCA_Subset$Datetime"] <- "Datetime"
-
-merged_data <- rbind(Global_PCA_Combined_df, New_Data_combined_df)
-
-# Order the data frames by the Datetime column
-merged_data <- merged_data[order(merged_data$Datetime), ]
-
-# Calculate min and max values for PC1, PC2, and PC3, ignoring NAs
-min_PC1 <- min(merged_data$PC1, na.rm = TRUE)
-max_PC1 <- max(merged_data$PC1, na.rm = TRUE)
-
-min_PC2 <- min(merged_data$PC2, na.rm = TRUE)
-max_PC2 <- max(merged_data$PC2, na.rm = TRUE)
-
-min_PC3 <- min(merged_data$PC3, na.rm = TRUE)
-max_PC3 <- max(merged_data$PC3, na.rm = TRUE)
-
-cat("PC1: Min =", min_PC1, "Max =", max_PC1, "\n")
-cat("PC2: Min =", min_PC2, "Max =", max_PC2, "\n")
-cat("PC3: Min =", min_PC3, "Max =", max_PC3, "\n")
-
-# Normalize the PCs to the range [0, 1]
-merged_data <- merged_data %>%
-  mutate(
-    norm_PC1 = (PC1 - min(PC1, na.rm = TRUE)) / (max(PC1, na.rm = TRUE) - min(PC1, na.rm = TRUE)),
-    norm_PC2 = (PC2 - min(PC2, na.rm = TRUE)) / (max(PC2, na.rm = TRUE) - min(PC2, na.rm = TRUE)),
-    norm_PC3 = (PC3 - min(PC3, na.rm = TRUE)) / (max(PC3, na.rm = TRUE) - min(PC3, na.rm = TRUE))
-  )
-
-# Display the first few rows of the updated cleaned data frame
-head(merged_data)
-
-# Combine the two data frames by columns
-merged_data <- cbind(merged_data, FOLDER = All_Data$FOLDER)
-merged_data <- cbind(merged_data, IN.FILE = All_Data$IN.FILE)
-
-# Convert the IN.FILE to a date-time object
-merged_data$Datetime <- as.POSIXct(gsub("_", " ", gsub(".WAV", "", merged_data$IN.FILE)), 
-                                format = "%Y%m%d %H%M%S")
-
-# Sort the data frame by the new Datetime column
-merged_data <- merged_data[order(merged_data$Datetime), ]
-
-# View the first few rows of the updated merged_data
-head(merged_data)
-
-# Identify rows where Datetime is NA
-na_rows <- is.na(merged_data$Datetime)
-
-# Extract the date and time from the IN.FILE column for rows with NA in Datetime
-# Assuming the format is YYYYMMDD_HHMMSS in IN.FILE
-if (any(na_rows)) {
-  # Extract the datetime information from the IN.FILE column (assuming the pattern YYYYMMDD_HHMMSS)
-  extracted_datetime <- strptime(str_extract(merged_data$IN.FILE[na_rows], "\\d{8}_\\d{6}"),
-                                 format = "%Y%m%d_%H%M%S",
-                                 tz = "UTC")
-  
-  # Replace the NA values in Datetime with the extracted datetime values
-  merged_data$Datetime[na_rows] <- extracted_datetime
-  
-  # Check if the replacement was successful
-  if (any(is.na(merged_data$Datetime))) {
-    cat("Warning: There are still NA values in the 'Datetime' column after filling.\n")
-  } else {
-    cat("All missing 'Datetime' values have been filled.\n")
-  }
-}
-
-# Ensure that the data is ordered by Datetime after filling
-merged_data <- merged_data[order(merged_data$Datetime), ]
-
-# View the updated data
-head(merged_data)
 ```
 
-#### Subsetting by AudioMoth #### 
+#### Subset dataset by recording device
 
-At this point it is important to understand the data structure that this code was written for. 
-
-Our survey area was divided into 8 zones, containing 23 sites, 5 habitats, and 36 recorders.  
-| Zone        | Site | Habitat   | AudioMoth |
-|-------------|------|-----------|-----------|
-| Z01_PARADOR | S001 | MATORRAL  | J008      |
-| Z01_PARADOR | S002 | PINO SILV | J003      |
-| Z01_PARADOR | S003 | PINO SILV | J016      |
-| Z01_PARADOR | S016 | MATORRAL  | J009      |
-
-As such, the folders containing the audio files that were downloaded from the field were named using the following structure: 
-Z02-PRADERASUR_S004-HAYABE_J001_220712-220901, which forms the FOLDER column in the final dataset. 
-
-The next section of code finds unique folder names in the FOLDER column to subset AudioMoths within the kaleidoscope output files. 
-
-Adapt the code accordingly to your data structure to find unique folder names. However, so long as the data from each AudioMoth are grouped by a unique name within a column called FOLDER, the following code should automatically subset them for you.
 ```
+#By Jack A. Greenhalgh & José Joaquín Lahoz Monfort. Feb, 2025.
+#Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
 
 # Find unique values in the 'FOLDER' column
-unique_folders <- unique(merged_data$FOLDER)
+unique_folders <- unique(All_Data$FOLDER)
 
 # Create a list to store data frames for each subset
 subset_data_frames <- lapply(unique_folders, function(folder) {
-  merged_data[merged_data$FOLDER == folder, ]
+  All_Data[All_Data$FOLDER == folder, ]
 })
 names(subset_data_frames) <- unique_folders
 
@@ -690,6 +479,7 @@ filter_data_frames <- function(list_of_data_frames, pattern) {
 }
 
 # Generate patterns for AudioMoth numbers (1:36)
+# NOTE: CHOOSE HERE WHAT AUDIOMOTHS WILL BE USED
 patterns <- paste0("J", formatC(1:36, width = 3, format = "d", flag = "0"))
 
 # Create a list to group data frames based on Audiomoth number patterns
@@ -718,7 +508,7 @@ single_data_frames
 # Assuming single_data_frames contains the grouped data frames
 
 # Directory to save CSV files
-output_directory <- "C:/Users/Administrador/Downloads/R/Ordesa/Data analysis Oct"
+output_directory <- "./1_individual_AM_dataframes"
 
 # Create the directory if it doesn't exist
 if (!dir.exists(output_directory)) {
@@ -747,112 +537,150 @@ for (pattern in names(single_data_frames)) {
     cat("No data for:", pattern, "\n")  # Indicate if there's no data to export
   }
 }
+```
+#### Add missing dates to the timeseries 
 
 ```
+#By Jack A. Greenhalgh & José Joaquín Lahoz Monfort. Feb, 2025.
+#Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
 
-#### Tapestry plots: Step 2: Automatically accounting for missing data and plotting.  
-```
-# Set seed, locale, and working directory
-set.seed(123)
-rm(list = ls())
-Sys.setlocale("LC_TIME", "English")
-setwd("C:/Users/Administrador/Downloads/R/Ordesa/Data analysis Oct")
+# Step 1: Read all CSV files in the directory matching the pattern
+files <- list.files(path = "./1_individual_AM_dataframes", pattern = "AudioMoth_J0(0[1-9]|[1-2][0-9]|3[0-6]).csv")
 
-# Load necessary libraries
-library(tidyverse)
-library(ggplot2)
-library(scales)
-library(dplyr)
+# Step 2: Define fixed date and time ranges for the processing
+date_range <- seq(as.Date(start_date), as.Date(end_date), by = "day")
 
-# Get the list of all AudioMoth files that match the pattern J001 to J036
-files <- list.files(pattern = "AudioMoth_J0(0[1-9]|[1-2][0-9]|3[0-6]).csv")
+time_range <- format(seq(from = as.POSIXct("00:00:00", format = "%H:%M:%S", tz = "UTC"), 
+                         to = as.POSIXct("23:50:00", format = "%H:%M:%S", tz = "UTC"), 
+                         by = "10 min"), "%H:%M:%S")
 
-# Define the function to fill missing dates
-fill_missing_dates <- function(data, expected_dates) {
-  all_dates <- data.frame(Datetime = expected_dates)
-  merged_data <- merge(all_dates, data, by = "Datetime", all.x = TRUE)
-  merged_data[is.na(merged_data)] <- 0
-  return(merged_data)
-}
-
-# Loop through each file in the list
+# Step 3: Loop through each file and process it
 for (file in files) {
-  # Read the data
-  data <- read.csv(file)
+  # Read the CSV file
+  data <- read.csv(paste0("./1_individual_AM_dataframes/",file))
   
-  # Ensure Datetime is in the correct format
-  data$Datetime <- as.character(data$Datetime)
+  # Step 4: Dealing with midnight values that appear as N/As
+  data$TIME <- ifelse(
+    grepl("000000\\.WAV$", data$IN.FILE), "00:00:00",  # Explicitly set midnight time
+    substr(data$IN.FILE, 10, 15)  # Extract HHMMSS from file name for non-midnight cases
+  )
   
-  # Remove rows with NA in the Datetime column
-  data <- na.omit(data)
+  # Fix the format of TIME to be consistent
+  data$TIME <- gsub("^(\\d{2})(\\d{2})(\\d{2})$", "\\1:\\2:\\3", data$TIME)
   
-  # Identify rows that contain only the date (no time)
-  only_date_rows <- grepl("^\\d{4}-\\d{2}-\\d{2}$", data$Datetime)
-  data$Datetime[only_date_rows] <- paste0(data$Datetime[only_date_rows], " 00:00:00")
+  # Step 5: Create the Datetime column combining DATE and TIME
+  data$Datetime <- as.POSIXct(
+    paste(data$DATE, data$TIME),
+    format = "%Y-%m-%d %H:%M:%S",
+    tz = "UTC"
+  )
   
-  # Convert Datetime back to POSIXct
-  data$Datetime <- as.POSIXct(data$Datetime, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+  # Step 7: Ensure that start_time and end_time are finite
+  start_time <- min(data$Datetime, na.rm = TRUE)
+  end_time <- max(data$Datetime, na.rm = TRUE)
   
-  # Sort data by Datetime
-  data <- data[order(data$Datetime), , drop = FALSE]
+  # Check for valid start_time and end_time
+  if (is.finite(start_time) & is.finite(end_time)) {
+    # Generate expected timestamps every 10 minutes
+    expected_timestamps <- seq(from = start_time, to = end_time, by = "10 min")
+  } else {
+    # If invalid, print error message and skip the file
+    cat("Invalid Datetime range in file:", file, "\n")
+    next
+  }
   
-  # Calculate the expected sequence of dates with a 10-minute interval
-  expected_dates <- seq(from = min(data$Datetime), to = max(data$Datetime), by = "10 min")
+  # Step 8: Identify missing timestamps by comparing expected sequence with actual Datetime
+  missing_timestamps <- setdiff(expected_timestamps, data$Datetime)
   
-  # Identify missing dates
-  missing_dates <- setdiff(expected_dates, data$Datetime)
+  # Convert missing timestamps to POSIXct format
+  missing_timestamps <- as.POSIXct(missing_timestamps, origin = "1970-01-01", tz = "UTC")
   
-  # Create a data frame for missing dates with proper POSIXct format
+  # Step 9: Create a data frame for missing timestamps with placeholder values (0)
+  NA_value <- 0  # Define what value NA will take
+  
   missing_data <- data.frame(
-    Datetime = as.POSIXct(missing_dates, origin = "1970-01-01", tz = "UTC"),
-    norm_PC1 = 0,
-    norm_PC2 = 0,
-    norm_PC3 = 0,
-    Type = NA,
-    HEX_Codes = NA,
-    FOLDER = NA
+    Datetime = missing_timestamps,
+    FOLDER = NA_value,  
+    IN.FILE = NA_value,  
+    CHANNEL = NA_value,  
+    OFFSET = NA_value,  
+    DURATION = NA_value,  
+    DATE = as.Date(missing_timestamps),
+    TIME = format(missing_timestamps, "%H:%M:%S"),
+    HOUR = NA_value,  
+    MEAN = NA_value,  
+    SD = NA_value,  
+    MODE = NA_value,  
+    Q25 = NA_value,  
+    KURT = NA_value,  
+    NDSI = NA_value,  
+    ACI = NA_value,  
+    BI = NA_value,  
+    BGN = NA_value,  
+    SNR = NA_value,  
+    ACT = NA_value,  
+    LFC = NA_value,  
+    MFC = NA_value,  
+    HFC = NA_value,  
+    CENT = NA_value,
+    PC1 = NA_value,
+    PC2 = NA_value,
+    PC3 = NA_value,
+    PC4 = NA_value,
+    PC5 = NA_value,
+    PC6 = NA_value,
+    PC7 = NA_value,
+    PC8 = NA_value,
+    PC9 = NA_value,
+    PC10 = NA_value,
+    PC11 = NA_value,
+    PC12 = NA_value,
+    PC13 = NA_value,
+    PC14 = NA_value,
+    norm_PC1 = NA_value,
+    norm_PC2 = NA_value,
+    norm_PC3 = NA_value,
+    Identifier = sub(".csv", "", file)  # Dynamically set Identifier to file name
   )
   
-  # Combine original data with missing data
-  combined_data <- bind_rows(data, missing_data)
-  combined_data <- combined_data[order(combined_data$Datetime), ]
+  # Retain only the specified columns in the 'data' data frame
+  data <- data %>%
+    select(SD, MODE, Q25, KURT, NDSI, ACI, BI, BGN, SNR, ACT, LFC, MFC, HFC, CENT, Datetime,
+           PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,PC11,PC12,PC13,PC14,norm_PC1,norm_PC2,norm_PC3)
+ 
+  missing_data <- missing_data %>%
+    select(SD, MODE, Q25, KURT, NDSI, ACI, BI, BGN, SNR, ACT, LFC, MFC, HFC, CENT, Datetime,
+           PC1,PC2,PC3,PC4,PC5,PC6,PC7,PC8,PC9,PC10,PC11,PC12,PC13,PC14,norm_PC1,norm_PC2,norm_PC3)
   
-  # Generate HEX color codes based on norm_PC1 (R), norm_PC2 (B), and norm_PC3 (G)
-  combined_data$HEX_Codes <- rgb(
-    red = combined_data$norm_PC2,
-    green = combined_data$norm_PC1,
-    blue = combined_data$norm_PC3,
-    maxColorValue = 1
-  )
+  # Step 9: Scale the specified columns between 0 and 1 (Min-Max Scaling)
+  cols_to_scale <- c("SD","MODE", "Q25", "KURT", "NDSI", "ACI", "BI", "BGN", "SNR", "ACT", "LFC", "MFC", "HFC", "CENT")
   
-  # Split the datetime column into date and time
-  combined_data <- combined_data %>%
-    mutate(
-      date = as.Date(Datetime),
-      time = format(Datetime, "%H:%M:%S")
-    ) %>%
-    select(-Datetime)
+  # Apply scaling to both 'data' and 'missing_data' data frames
+  data[cols_to_scale] <- lapply(data[cols_to_scale], function(x) (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
+  missing_data[cols_to_scale] <- lapply(missing_data[cols_to_scale], function(x) (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)))
   
-  # Convert date and time to proper data types
-  combined_data$date <- as.Date(combined_data$date, format = "%d/%m/%Y")
-  combined_data$time <- as.POSIXct(combined_data$time, format = "%H:%M")
+  # Replace all NAs in 'data' with NA_value
+  data[is.na(data)] <- NA_value
   
-  # Plot
-  p <- ggplot(combined_data, aes(x = time, y = date)) +
-    geom_tile(aes(fill = `HEX_Codes`)) +
-    labs(x = "Time of day", y = "Date") +
-    scale_x_datetime(date_breaks = "2 hours", date_labels = "%H:%M") +
-    scale_y_date(date_breaks = "1 month", date_labels = "%b %Y") +
-    theme_bw() +
-    scale_fill_identity()
+  # Replace all NAs in 'missing_data' with NA_value
+  missing_data[is.na(missing_data)] <- NA_value
   
-  # Generate file name for saving the plot (replace .csv with .png)
-  plot_filename <- gsub(".csv", ".png", file)
+  # Step 10: Combine the missing data with the original dataset
+  data_filled <- rbind(data, missing_data)
   
-  # Save the plot
-  ggsave(filename = plot_filename, plot = p, width = 6, height = 6)
+  # Step 11: Sort the data by Datetime after combining
+  data_filled <- data_filled[order(data_filled$Datetime), ]
+  
+  # Step 12: Ensure the date range is consistent for all processing
+  data_filled <- data_filled %>%
+    mutate(date = as.Date(Datetime)) %>%
+    dplyr::filter(date %in% date_range)
+  
+  # Step 15: Export the processed `data_filled` data frame as a CSV file
+  output_file <- paste0("./1b_individual_AM_dataframes_full/","Processed_", sub(".csv", "", file), ".csv")
+  write.csv(data_filled, output_file, row.names = FALSE)
+  
 }
-
 ```
 
 #### False-colour spectrograms: Plotting 24 hrs of acoustic data with noise reduction. 
@@ -860,6 +688,9 @@ for (file in files) {
 ![Ordesa Summer 24 hr spec](https://github.com/user-attachments/assets/48f0378d-b104-4dca-ae11-180b91eb9925)
 
 ```
+#By Jack A. Greenhalgh. Feb, 2025.
+#Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
+
 library(tuneR)
 library(seewave)
 library(signal)
@@ -1189,6 +1020,166 @@ p <- ggplot(combined_df_adjusted, aes(x = Time, y = Frequency)) +
   theme_bw()
 
 ggsave("J018 Feb 2024.pdf", plot = p, width = 8, height = 6, dpi = 300)
+```
+
+#### Tapestry plots: Using one acoustic index 
+
+```
+#By Jack A. Greenhalgh1 & José Joaquín Lahoz Monfort2. Feb, 2025.
+#1Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
+#2Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
+
+# # Load required libraries
+# library(ggplot2)
+# library(dplyr)
+
+# Step 1: Read all CSV files in the directory matching the pattern
+files <- list.files(path = "INSERT YOUR SUBSETTED AND CLEANED DATA HERE")
+print(files)
+
+# Step 2: Define fixed date and time ranges for the plot
+date_range <- seq(as.Date(start_date), as.Date(end_date), by = "day")
+time_range <- format(seq(from = as.POSIXct("00:00:00", format = "%H:%M:%S", tz = "UTC"), 
+                         to = as.POSIXct("23:50:00", format = "%H:%M:%S", tz = "UTC"), 
+                         by = "10 min"), "%H:%M:%S")
+
+# Step 3: Loop through each file and process it
+for (file in files) {
+  # Read the CSV file
+  data <- read.csv(paste0("./1b_individual_AM_dataframes_full/",file))
+  
+  # Fix missing midnight values in the Datetime column
+  data$Datetime <- as.character(data$Datetime)  # Convert to character for manipulation
+  missing_midnight <- grepl("^\\d{4}-\\d{2}-\\d{2}$", data$Datetime)  # Identify rows missing time
+  data$Datetime[missing_midnight] <- paste0(data$Datetime[missing_midnight], " 00:00:00")  # Add "00:00:00"
+  
+  # Convert back to POSIXct
+  data$Datetime <- as.POSIXct(data$Datetime, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+  
+  # Step 4: Split Datetime into Date and Time for plotting
+  data <- data %>% 
+    mutate(
+      date = as.Date(Datetime),  # Extract the date part
+      time = format(Datetime, "%H:%M:%S")  # Extract the time part as character
+    )
+  
+  # Convert `time` back to POSIXct for plotting
+  data$time <- as.POSIXct(data$time, format = "%H:%M:%S", tz = "UTC")
+  
+  # LOOP FOR ALL ACOUSTIC INDICES:
+  for (index in 1:13) {
+      
+      acousticindex <- names(data)[index]
+    
+      # Step 5: Generate HEX codes for each acoustic index
+      data$HEX_codes <- rgb(
+        red = data[,index],
+        green = data[,index],
+        blue = data[,index],
+        maxColorValue = 1
+      )
+      
+      # Step 6: Generate the plot with HEX color codes and standardized date/time ranges
+      p <- ggplot(data, aes(x = time, y = date)) + 
+        geom_tile(aes(fill = HEX_codes)) + 
+        labs(x = "Time of day", y = "Date", title = paste(acousticindex," for", file)) + 
+        scale_x_datetime(
+          date_breaks = "2 hours", 
+          date_labels = "%H:%M", 
+          limits = c(as.POSIXct("00:00:00", format = "%H:%M:%S", tz = "UTC"), 
+                     as.POSIXct("23:50:00", format = "%H:%M:%S", tz = "UTC"))
+        ) + 
+        scale_y_date(
+          date_breaks = "1 month", 
+          date_labels = "%b %Y", 
+          limits = c(as.Date(start_date), as.Date(end_date))
+        ) + 
+        theme_bw() + 
+        scale_fill_identity()
+      
+      # Step 7: Save the plot with a dynamic file name based on the current file
+      ggsave(paste0(acousticindex,"_", sub(".csv", "", file), ".png"), 
+             path = "./2_single_indiv_tapestries", plot = p, height = 6, width = 6)
+
+  } # end of inner loop (acoustic indices)
+  
+} # end of outer loop (individual device files)
+```
+
+#### Tapestry plots: Using three acoustic indices
+
+```
+#By Jack A. Greenhalgh1 & José Joaquín Lahoz Monfort2. Feb, 2025.
+#1Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
+#2Instituto Pirenaico de Ecología (CSIC), Avenida Nuestra Señora de la Victoria, 22700, Jaca, Huesca, España.
+
+# library(ggplot2)
+# library(dplyr)
+
+# Step 1: Read all CSV files in the directory matching the pattern
+files <- list.files(path = "INSERT YOUR SUBSETTED AND CLEANED DATA HERE")
+print(files)
+
+# Step 2: Define fixed date and time ranges for the plot
+date_range <- seq(as.Date(start_date), as.Date(end_date), by = "day")
+time_range <- format(seq(from = as.POSIXct("00:00:00", format = "%H:%M:%S", tz = "UTC"), 
+                         to = as.POSIXct("23:50:00", format = "%H:%M:%S", tz = "UTC"), 
+                         by = "10 min"), "%H:%M:%S")
+
+# Step 3: Loop through each file and process it
+for (file in files) {
+  # Read the CSV file
+  data <- read.csv(paste0("./1b_individual_AM_dataframes_full/",file))
+  
+  # Fix missing midnight values in the Datetime column
+  data$Datetime <- as.character(data$Datetime)  # Convert to character for manipulation
+  missing_midnight <- grepl("^\\d{4}-\\d{2}-\\d{2}$", data$Datetime)  # Identify rows missing time
+  data$Datetime[missing_midnight] <- paste0(data$Datetime[missing_midnight], " 00:00:00")  # Add "00:00:00"
+  
+  # Convert back to POSIXct
+  data$Datetime <- as.POSIXct(data$Datetime, format="%Y-%m-%d %H:%M:%S", tz = "UTC")
+  
+  # Split Datetime into Date and Time for plotting
+  data <- data %>% 
+    mutate(
+      date = as.Date(Datetime),  # Extract the date part
+      time = format(Datetime, "%H:%M:%S")  # Extract the time part as character
+    )
+  
+  # Convert `time` back to POSIXct for plotting
+  data$time <- as.POSIXct(data$time, format = "%H:%M:%S", tz = "UTC")
+  
+  # Part 3: Generate HEX codes using a column - CHOOSE INDICES HERE
+  data$HEX_codes <- rgb(
+    red = data$MODE,
+    green = data$BI,
+    blue = data$MFC,
+    maxColorValue = 1
+  )
+  combo_name <- "MODE-BI-MFC"  # Change name accordingly
+  
+  # Step 5: Generate the plot with HEX color codes and standardized date/time ranges
+  p <- ggplot(data, aes(x = time, y = date)) + 
+    geom_tile(aes(fill = HEX_codes)) + 
+    labs(x = "Time of day", y = "Date", title = paste(combo_name, " for", file)) + 
+    scale_x_datetime(
+      date_breaks = "2 hours", 
+      date_labels = "%H:%M", 
+      limits = c(as.POSIXct("00:00:00", format = "%H:%M:%S", tz = "UTC"), 
+                 as.POSIXct("23:50:00", format = "%H:%M:%S", tz = "UTC"))
+    ) + 
+    scale_y_date(
+      date_breaks = "1 month", 
+      date_labels = "%b %Y", 
+      limits = c(as.Date(start_date), as.Date(end_date))
+    ) + 
+    theme_bw() + 
+    scale_fill_identity()
+  
+  # Step 6: Save the plot with a dynamic file name based on the current file
+  ggsave(paste0(combo_name,"_", sub(".csv", "", file), ".png"), 
+         path = "./3_combined_tapestries", plot = p, height = 6, width = 6)
+}
 ```
 
 ### References
