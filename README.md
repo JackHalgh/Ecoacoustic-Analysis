@@ -243,7 +243,7 @@ The package 'seewave' can also be used to calculate additional acoustic indcies,
 Download Anaconda via: https://www.anaconda.com/download and then run the code below in Spyder. 
 
 ```
-#By Jack A. Greenhalgh. June, 2025.
+#By Jack A. Greenhalgh. October, 2025.
 #Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
 
 import os
@@ -290,7 +290,7 @@ spectrogram_fmax = 700
 subset_spectrogram = False  # Set True to crop Sxx manually
 
 # Main directory
-main_directory = r"D:\The Gambia\The Gambia sound files\For Python"
+main_directory = r"INSERT YOUR DIRECTORY HERE"
 
 # =============================
 # File Processing Function
