@@ -1276,6 +1276,268 @@ for (file in files) {
 }
 ```
 
+### Seasonal drift code
+
+```
+#By Jack A. Greenhalgh1, Dec, 2025.
+#1Department of Biology, McGill University, 1205 Dr Penfield Ave, Montreal, Quebec, H3A 1B1, Canada.
+#### Part 1. Loading, cleaning, and scaling data ####
+
+# Load packages
+library(corrplot)
+library(caret)
+library(stringr)
+library(lubridate)
+library(dplyr)
+library(hms)
+library(ggplot2)
+
+# Set working directory
+setwd("C:/Users/Administrador/OneDrive - McGill University/Gault Data/Raw acoustic indices (terrestrial)")
+
+# Load data
+J001_May_July_2025 <- read.csv("J001_Maple_Beech_alpha_acoustic_indices_results_May_July_2025.csv")
+J001_July_August_2025 <- read.csv("J001_Maple_Beech_alpha_acoustic_indices_results_July_August_2025.csv")
+J002_May_July_2025 <- read.csv("J002_Oak_alpha_acoustic_indices_results_May_July_2025.csv")
+J002_July_August_2025 <- read.csv("J002_Oak_alpha_acoustic_indices_results_July_August_2025.csv")
+J003_May_July_2025 <- read.csv("J003_Lake_Shore_alpha_acoustic_indices_results_May_July_2025.csv")
+J003_July_August_2025 <- read.csv("J003_Lake_Shore_alpha_acoustic_indices_results_July_August_2025.csv")
+M006_May_July_2025 <- read.csv("M006_Beaver_Pond_alpha_acoustic_indices_results_May_July_2025.csv")
+M006_July_August_2025 <- read.csv("M006_Beaver_Pond_alpha_acoustic_indices_results_July_August_2025.csv")
+M007_May_July_2025 <- read.csv("M007_Wetland_alpha_acoustic_indices_results_May_July_2025.csv")  
+M007_July_August_2025 <- read.csv("M007_Wetland_alpha_acoustic_indices_results_July_August_2025.csv")  
+M008_May_July_2025 <- read.csv("M008_Oak_alpha_acoustic_indices_results_May_July_2025.csv")
+M008_July_August_2025 <- read.csv("M008_Oak_alpha_acoustic_indices_results_July_August_2025.csv")
+M009_May_July_2025 <- read.csv("M009_Maple_Beech_alpha_acoustic_indices_results_May_July_2025.csv")
+M009_July_August_2025 <- read.csv("M009_Maple_Beech_alpha_acoustic_indices_results_July_August_2025.csv")
+M010_May_July_2025 <- read.csv("M010_Beaver_Pond_alpha_acoustic_indices_results_May_July_2025.csv")  
+M010_July_August_2025 <- read.csv("M010_Beaver_Pond_alpha_acoustic_indices_results_July_August_2025.csv")  
+
+# Merge all data sets into one
+merged_data <- rbind(
+  J001_May_July_2025, J001_July_August_2025,
+  J002_May_July_2025, J002_July_August_2025,
+  J003_May_July_2025, J003_July_August_2025,
+  M006_May_July_2025, M006_July_August_2025,
+  M007_May_July_2025, M007_July_August_2025,
+  M008_May_July_2025, M008_July_August_2025,
+  M009_May_July_2025, M009_July_August_2025,
+  M010_May_July_2025, M010_July_August_2025
+)
+head(merged_data)
+
+# Extract filename
+Filename <- merged_data$filename
+
+# Subset numeric columns from 2 to 61
+numeric_data <- merged_data[, 2:61]
+
+# Compute correlation matrix
+cor_matrix <- cor(numeric_data, use = "complete.obs")
+
+# Plot correlation matrix
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.cex = 0.7, tl.col = "black", addCoef.col = "black", number.cex = 0.5)
+print(cor_matrix)
+
+# Find indices of highly correlated variables (threshold > 0.8)
+high_corr_indices <- findCorrelation(cor_matrix, cutoff = 0.8, names = TRUE)
+
+# Remove them from the dataset
+filtered_data <- numeric_data[, !colnames(numeric_data) %in% high_corr_indices]
+
+head(filtered_data)
+
+# Apply z-transformation
+z_scaled_data <- as.data.frame(scale(filtered_data))
+
+# View the result
+head(z_scaled_data)
+summary(z_scaled_data)
+
+# Add filename back
+z_scaled_data <- cbind(Filename, z_scaled_data)
+head(z_scaled_data)
+
+# Extract site information and store in a new column called site
+z_scaled_data$Site <- str_extract(z_scaled_data$Filename, "^.*?_.*?(?=_)")
+head(z_scaled_data[c("Filename", "Site")])
+
+#Extract datetime
+z_scaled_data <- z_scaled_data %>%
+  mutate(
+    # Extract datetime string (e.g., "20250513_120000") using regex
+    datetime_str = str_extract(Filename, "\\d{8}_\\d{6}"),
+    
+    # Parse into POSIXct format (YYYYMMDD_HHMMSS)
+    Datetime = as.POSIXct(datetime_str, format = "%Y%m%d_%H%M%S")
+  )
+
+# Round timestamps to the nearest 10
+z_scaled_data <- z_scaled_data %>%
+  mutate(
+    Datetime = round_date(Datetime, unit = "10 minutes")
+  )
+
+head(z_scaled_data)
+
+# ===============================
+# 🔹 Extract Site and Date from filename
+# ===============================
+z_scaled_data <- z_scaled_data %>%
+  mutate(
+    # Extract site code from the start of the filename (everything before first underscore)
+    SiteCode = str_extract(Filename, "^[A-Z0-9]+"),
+    
+    # Extract date string from filename (YYYYMMDD)
+    Date_str = str_extract(Filename, "\\d{8}"),
+    
+    # Convert date string to Date object
+    Date = as.Date(Date_str, format = "%Y%m%d")
+  )
+
+# ===============================
+# 🔹 Subset to unique days × site
+# ===============================
+unique_days_site <- z_scaled_data %>%
+  group_by(SiteCode, Date) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE)) %>%
+  ungroup()
+
+# ===============================
+# 🔹 Check result
+# ===============================
+head(unique_days_site)
+
+# ===============================
+# 🔹 Select numeric features for PCA
+# ===============================
+numeric_cols <- unique_days_site %>%
+  select(where(is.numeric)) %>%
+  colnames()
+
+# ===============================
+# 🔹 Remove highly correlated features (optional)
+# ===============================
+numeric_data <- unique_days_site %>% select(all_of(numeric_cols))
+
+# Remove constant or all-NA columns
+numeric_data_clean <- numeric_data %>%
+  select(where(~ !all(is.na(.)) & var(., na.rm = TRUE) > 0))
+
+# Remove highly correlated variables
+if(ncol(numeric_data_clean) > 1){
+  corr_matrix <- cor(numeric_data_clean, use = "pairwise.complete.obs")
+  high_corr <- findCorrelation(corr_matrix, cutoff = 0.9)
+  numeric_data_uncor <- numeric_data_clean[, -high_corr]
+} else {
+  numeric_data_uncor <- numeric_data_clean
+}
+
+# ===============================
+# 🔹 Run PCA on all numeric features
+# ===============================
+pca_res <- prcomp(numeric_data_uncor, scale. = TRUE)
+
+# ===============================
+# 🔹 Project each site × day into PCA space
+# ===============================
+pca_scores <- as.data.frame(pca_res$x[, 1:2]) # first two PCs
+pca_scores$Site <- unique_days_site$SiteCode
+pca_scores$Date <- unique_days_site$Date
+
+# Rename columns for clarity
+centroids <- pca_scores %>%
+  rename(PC1 = PC1, PC2 = PC2)
+
+# ===============================
+# 🔹 Check results
+# ===============================
+head(centroids)
+
+library(ggplot2)
+library(grid)
+
+# ===============================
+# 🔹 Prepare arrow segments per site
+# ===============================
+arrow_segments <- centroids %>%
+  arrange(Site, Date) %>%
+  group_by(Site) %>%
+  mutate(PC1_end = lead(PC1),
+         PC2_end = lead(PC2)) %>%
+  filter(!is.na(PC1_end) & !is.na(PC2_end)) %>%
+  ungroup()
+
+library(dplyr)
+library(lubridate)
+
+# Compute weekly centroids for all sites
+centroids_weekly <- centroids %>%
+  mutate(Week = floor_date(Date, unit = "week")) %>%  # Convert Date to week
+  group_by(Site, Week) %>%                            # Group by Site and Week
+  summarise(
+    PC1 = mean(PC1, na.rm = TRUE),
+    PC2 = mean(PC2, na.rm = TRUE),
+    Month = first(Month)  # Keep month for coloring
+  ) %>%
+  arrange(Site, Week) %>%  # Ensure ordering within each site
+  ungroup() %>%
+  group_by(Site) %>%        # Add a time index per site
+  mutate(TimeIndex = row_number()) %>%
+  ungroup()
+
+# Get the unique sites
+sites <- unique(centroids_weekly$Site)
+
+# Loop through each site
+for (site_id in sites) {
+  
+  # Filter data for the current site
+  site_data <- centroids_weekly %>% filter(Site == site_id)
+  
+  # Prepare arrow segments
+  arrow_segments <- site_data %>%
+    mutate(
+      PC1_end = lead(PC1),
+      PC2_end = lead(PC2)
+    ) %>%
+    filter(!is.na(PC1_end) & !is.na(PC2_end))
+  
+  # Create the plot
+  p <- ggplot(site_data, aes(x = PC1, y = PC2)) +
+    geom_point(aes(color = Month), size = 7, alpha = 0.7) +
+    geom_segment(
+      data = arrow_segments,
+      aes(x = PC1, y = PC2, xend = PC1_end, yend = PC2_end, color = Month),
+      arrow = arrow(length = unit(0.3, "cm")),
+      linetype = "solid"
+    ) +
+    geom_text(aes(label = TimeIndex), color = "white", size = 3, vjust = 0.5, hjust = 0.5) +
+    theme_bw() +
+    labs(
+      title = paste("Site:", site_id),
+      x = "PC1",
+      y = "PC2",
+      color = "Month"
+    ) +
+    scale_color_manual(
+      values = colorRampPalette(c("darkred", "orange"))(length(unique(site_data$Month)))
+    ) +
+    coord_cartesian(xlim = pc1_range, ylim = pc2_range) +
+    theme(legend.position = "bottom")
+  
+  # Save the plot as a PNG file named after the site
+  ggsave(
+    filename = paste0("plot_", site_id, ".png"),
+    plot = p,
+    width = 8,
+    height = 6,
+    dpi = 300
+  )
+}
+```
+
 ### References
 
 Villanueva-Rivera, L. J., & Pijanowski, B. C. (2018). Soundecology: Soundscape ecology. R package version 1.3.3. https://CRAN.R-project.org/package=soundecology
