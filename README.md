@@ -431,6 +431,151 @@ if __name__ == "__main__":
     print_acoustic_indices_summary()
 ```
 
+#### Calculating acoustic features in Python
+
+```
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jan 22 20:06:43 2026
+
+@author: Administrador
+"""
+
+
+import os
+import numpy as np
+import pandas as pd
+import librosa
+import gc
+from scipy.signal import find_peaks, butter, lfilter
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor as Executor, as_completed
+
+# =============================
+# Parameters
+# =============================
+# Your requested analysis band
+low_cut = 200.0   
+high_cut = 24000.0  
+
+# Internal Processing Sampling Rate 
+# (Set to 10kHz to comfortably cover your 4kHz limit while saving 80% RAM)
+TARGET_SR = 10000.0 
+
+# NDSI (Soundscape Index) adjusted for a 2-4kHz study
+# Anthro: 2000-2800Hz | Bio: 2800-4000Hz
+anthro_min, anthro_max = 2000, 2800  
+bio_min, bio_max = 200, 24000       
+
+peak_height_db = -80  
+min_peak_dist = 1000  
+n_mfcc = 13  
+n_fft = 1024 
+hop_length = 256
+
+main_directory = r"D:\Light pollution\Python"
+
+# =============================
+# Signal Processing Functions
+# =============================
+def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    # Safety check for Nyquist
+    if high >= 1: high = 0.99 
+    b, a = butter(order, [low, high], btype='band')
+    return lfilter(b, a, data)
+
+def calculate_ndsi(S, frequencies, anthro_range, bio_range):
+    anthro_mask = (frequencies >= anthro_range[0]) & (frequencies <= anthro_range[1])
+    bio_mask = (frequencies >= bio_range[0]) & (frequencies <= bio_range[1])
+    anthro_energy = np.sum(S[anthro_mask, :])
+    bio_energy = np.sum(S[bio_mask, :])
+    total_energy = anthro_energy + bio_energy
+    return (bio_energy - anthro_energy) / total_energy if total_energy > 0 else 0, bio_energy, anthro_energy
+
+def process_file(foldername, folder_path, filename):
+    filepath = os.path.join(folder_path, filename)
+    features = {'filename': f"{foldername}_{filename}"}
+
+    try:
+        # 1. Load & Downsample from 48.8kHz to 10kHz
+        # This is the "Memory Lifesaver" step
+        y, sr = librosa.load(filepath, sr=TARGET_SR)
+        
+        if len(y) == 0: return None
+
+        # 2. Apply Digital Bandpass Filter
+        y_filtered = butter_bandpass_filter(y, low_cut, high_cut, sr)
+
+        # 3. Frequency Domain Analysis
+        S_mag = np.abs(librosa.stft(y_filtered, n_fft=n_fft, hop_length=hop_length))
+        freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
+
+        # Features
+        features['Spectral_Centroid_Mean'] = np.mean(librosa.feature.spectral_centroid(S=S_mag, sr=sr))
+        features['Spectral_Flatness_Mean'] = np.mean(librosa.feature.spectral_flatness(S=S_mag))
+        
+        ndsi, bio_en, anthro_en = calculate_ndsi(S_mag, freqs, (anthro_min, anthro_max), (bio_min, bio_max))
+        features['NDSI'] = ndsi
+        features['Bio_Energy'] = bio_en
+        features['Anthro_Energy'] = anthro_en
+
+        # 4. Temporal Analysis
+        features['ZCR_Mean'] = np.mean(librosa.feature.zero_crossing_rate(y_filtered))
+        features['RMS_Mean'] = np.mean(librosa.feature.rms(y=y_filtered))
+        
+        # Event Detection
+        peaks, _ = find_peaks(np.abs(y_filtered), height=librosa.db_to_amplitude(peak_height_db), distance=min_peak_dist)
+        features['Event_Count'] = len(peaks)
+
+        # 5. MFCCs
+        mfccs = librosa.feature.mfcc(S=librosa.amplitude_to_db(S_mag + 1e-10), sr=sr, n_mfcc=n_mfcc)
+        for i, coeff in enumerate(np.mean(mfccs, axis=1)):
+            features[f'MFCC_{i+1}'] = coeff
+
+        # Cleanup
+        del y, y_filtered, S_mag, freqs
+        gc.collect() 
+        return features
+
+    except Exception as e:
+        print(f"⚠ Error in {filename}: {e}")
+        return None
+
+# =============================
+# Main Execution Logic
+# =============================
+def main():
+    foldernames = [f for f in os.listdir(main_directory) if os.path.isdir(os.path.join(main_directory, f))]
+    
+    for foldername in foldernames:
+        folder_path = os.path.join(main_directory, foldername)
+        wav_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.wav')]
+        if not wav_files: continue
+
+        print(f"\n🚀 Analyzing {foldername} ({len(wav_files)} files at 48.8kHz source)")
+        results = []
+
+        # max_workers=1 or 2 is safest for high-res files to prevent RAM crashes
+        with Executor(max_workers=2) as executor:
+            futures = {executor.submit(process_file, foldername, folder_path, f): f for f in wav_files}
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Extracting bandwidth data"):
+                res = future.result()
+                if res: results.append(res)
+
+        if results:
+            df = pd.DataFrame(results)
+            out_name = os.path.join(folder_path, f"{foldername}_Summary_0.2_22kHz")
+            df.to_csv(f"{out_name}.csv", index=False, encoding='utf-8-sig')
+            df.to_csv(f"{out_name}.txt", index=False, sep=',', encoding='utf-8')
+            print(f"✨ Success: Data exported to CSV and TXT in {foldername}")
+
+if __name__ == "__main__":
+    main()
+```
+
 #### Calculating acoustic indices using Kaleidoscope Pro
 
 The analysis of large acoustic datasets in best handled by a program called Kaleidoscope Pro, see https://www.wildlifeacoustics.com/products/kaleidoscope/sound-level-analysis for more information.
